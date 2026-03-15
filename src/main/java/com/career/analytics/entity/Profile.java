@@ -1,9 +1,8 @@
 package com.career.analytics.entity;
 
+import com.career.analytics.dto.SignupRequestDto;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -16,8 +15,9 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "profiles")
 @Getter
-@Setter
-@NoArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@NoArgsConstructor (access = AccessLevel.PROTECTED)
+@Builder
 @EntityListeners(AuditingEntityListener.class)
 public class Profile {
     @Id
@@ -45,5 +45,30 @@ public class Profile {
     @Column(nullable = false, name = "updated_at")
     private LocalDateTime updatedAt;
 
+    //profile 생성자
+    public static Profile createProfile(Users user, SignupRequestDto signupDto) {
+        return Profile.builder()
+                .user(user)
+                .name(signupDto.getName())
+                .gender(signupDto.getGender())
+                .birthDate(signupDto.getBirthDay())
+                .bio(signupDto.getBio())
+                .build();
+    }
+    //profile update 메서드
+    public void updateProfile(String name, Gender gender, LocalDate birthDate, String bio) {
+        if(name != null && !name.isEmpty()){
+            this.name = name;
+        }
+        if(gender !=null){
+            this.gender = gender;
+        }
+        if(birthDate != null){
+            this.birthDate = birthDate;
+        }
+        if(bio != null){
+            this.bio = bio;
+        }
+    }
 
 }

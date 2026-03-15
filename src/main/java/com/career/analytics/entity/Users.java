@@ -1,11 +1,9 @@
 package com.career.analytics.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedBy;
+import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
@@ -15,8 +13,9 @@ import java.util.List;
 @Entity
 @Table(name = "users") //DB Table name Users
 @Getter
-@Setter
-@NoArgsConstructor
+@Builder
+@NoArgsConstructor(access = AccessLevel.PROTECTED) //JPA를 위한 기본 생성자
+@AllArgsConstructor (access = AccessLevel.PRIVATE) //Builder를 위한 전체. 생성자
 @EntityListeners(AuditingEntityListener.class) // 스프링에서 jpa엔티티의 변경이나 저장을 감지해서 시간을 자동으로 넣음
 public class Users {
     @Id
@@ -30,20 +29,17 @@ public class Users {
 
     private String password; //소설 로그인 사용자는 null 가능
 
-    @Column(nullable = false, unique = true)
-    private String name;
-
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Builder.Default
     private Role role = Role.USER; //관리자는 Update로 수정해서 관리자 아이디 만들기
 
     @CreatedDate
-    @Column(nullable = false, updatable = false)
+    @Column(nullable = false, updatable = false, name = "created_at")
     private LocalDateTime createdAt;
 
-    @LastModifiedBy
-    @Column(nullable = false)
+    @LastModifiedDate
+    @Column(nullable = false, name = "updated_at")
     private LocalDateTime updatedAt;
 
     //관계 설정하기
@@ -53,6 +49,7 @@ public class Users {
     //연결되지 않은 객체 삭제
     private Profile profile;
 
+    @Builder.Default
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<SocialLogin> socialLogins = new ArrayList<>();
 
@@ -62,39 +59,51 @@ public class Users {
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private UserJobPreference userJobPreference;
 
+    @Builder.Default
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Education> educations = new ArrayList<>();
 
+    @Builder.Default
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<WorkExperience> workExperiences = new ArrayList<>();
 
+    @Builder.Default
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProjectAchievement> projectAchievements = new ArrayList<>();
 
+    @Builder.Default
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Activity> activities = new ArrayList<>();
 
+    @Builder.Default
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Certification> certifications = new ArrayList<>();
 
+    @Builder.Default
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Language> languages = new ArrayList<>();
 
+    @Builder.Default
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Award> awards = new ArrayList<>();
 
+    @Builder.Default
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Portfolio> portfolios = new ArrayList<>();
 
+    @Builder.Default
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<UserSkill> userSkills = new ArrayList<>();
 
+    @Builder.Default
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ScrapedJob> scrapedJobs = new ArrayList<>();
 
+    @Builder.Default
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<AiUsageLog> aiUsageLogs = new ArrayList<>();
 
+    @Builder.Default
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CoverLetter> coverLetters = new ArrayList<>();
 }
