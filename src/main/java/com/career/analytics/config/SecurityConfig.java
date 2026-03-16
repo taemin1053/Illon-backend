@@ -21,7 +21,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-@RequiredArgsConstructor // ✅ 생성자 주입!
+@RequiredArgsConstructor
 public class SecurityConfig {
 
     private final CustomUserDetailsService userDetailsService;
@@ -29,7 +29,7 @@ public class SecurityConfig {
 
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter() {
-        // ✅ 생성자로 의존성 주입!
+        //  생성자로 의존성 주입
         return new JwtAuthenticationFilter(jwtTokenProvider, userDetailsService);
     }
 
@@ -58,7 +58,13 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
-                        .anyRequest().authenticated()
+                        .requestMatchers(
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/swagger/**"
+                        ).permitAll() // 2. 스웨거 관련 경로 일괄 허용
+                                .anyRequest().authenticated()
                 );
 
         http.authenticationProvider(authenticationProvider());
