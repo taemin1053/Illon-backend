@@ -8,11 +8,9 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.lang.reflect.Field;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
-
 @RestControllerAdvice
 public class GlobalExceptionHandler {
     //이메일 중복 예외 처리
@@ -59,8 +57,9 @@ public class GlobalExceptionHandler {
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.UNAUTHORIZED.value())
-                .message("Login Failed")
+                .error("Login Failed")
                 .message(ex.getMessage())
+                .message("이메일 또는 비밀번호가 올바르지 않습니다.")
                 .build();
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
     }
@@ -102,6 +101,18 @@ public class GlobalExceptionHandler {
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.NOT_FOUND.value())
                 .error("Education Not Found")
+                .message(ex.getMessage())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+    //경력 정보없음
+    @ExceptionHandler(WorkExperienceNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleWorkExperienceNotFound(WorkExperienceNotFoundException ex) {
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.NOT_FOUND.value())
+                .error("Work Experience Not Found")
                 .message(ex.getMessage())
                 .build();
 
