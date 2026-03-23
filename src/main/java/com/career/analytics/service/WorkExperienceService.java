@@ -81,6 +81,20 @@ public class WorkExperienceService {
 
         return new WorkExperienceResponseDto(workExperience);
     }
+    @Transactional
+    public void deleteWorkExperience(Long workExperienceId) {
+        Long userId = getCurrentUserId();
+
+        WorkExperience workExperience = workExperienceRepository.findById(workExperienceId)
+                .orElseThrow(() -> new WorkExperienceNotFoundException(workExperienceId));
+
+        // 본인 확인
+        if (!workExperience.getUser().getId().equals(userId)) {
+            throw new UnauthorizedAccessException("본인의 경력만 삭제할 수 있습니다.");
+        }
+
+        workExperienceRepository.delete(workExperience);
+    }
     private Long getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();

@@ -55,7 +55,7 @@ public class WorkExperience {
     @Column(nullable = false, name = "updated_at")
     private LocalDateTime updatedAt;
 
-    // ========== 정적 팩토리 메서드 ==========
+    //  정적 팩토리 메서드
 
 
      //경력 정보 생성
@@ -72,7 +72,7 @@ public class WorkExperience {
                 .build();
     }
 
-    // ========== 비즈니스 로직 메서드 ==========
+    //  비즈니스 로직 메서드
 
 
      // 경력 정보 업데이트

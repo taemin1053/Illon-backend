@@ -84,6 +84,7 @@ public class GlobalExceptionHandler {
                 .build();
         return ResponseEntity.badRequest().body(response);
     }
+    //권한 없음
     @ExceptionHandler(UnauthorizedAccessException.class)
     public ResponseEntity<ErrorResponse> handleUnauthorizedAccess(UnauthorizedAccessException ex) {
         ErrorResponse error = ErrorResponse.builder()
@@ -95,6 +96,8 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
     }
+
+    //학력 정보 없음
     @ExceptionHandler(EducationNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleEducationNotFound(EducationNotFoundException ex) {
         ErrorResponse error = ErrorResponse.builder()
@@ -116,6 +119,17 @@ public class GlobalExceptionHandler {
                 .message(ex.getMessage())
                 .build();
 
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    @ExceptionHandler(ProjectAchievementNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleProjectAchievementNotFound(ProjectAchievementNotFoundException ex) {
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.NOT_FOUND.value())
+                .error("Project Not Found")
+                .message(ex.getMessage())
+                .build();
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
     //기타 예외

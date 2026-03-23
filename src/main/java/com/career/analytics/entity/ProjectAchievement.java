@@ -1,9 +1,7 @@
 package com.career.analytics.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -15,10 +13,10 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "project_achievements")
 @Getter
-@Setter
-@NoArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 @EntityListeners(AuditingEntityListener.class)
-
+@Builder
 public class ProjectAchievement {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -56,4 +54,30 @@ public class ProjectAchievement {
     @LastModifiedDate
     @Column(nullable = false,name = "updated_at")
     private LocalDateTime updatedAt;
+
+    //프로젝트 성과 업데이트
+    public void update(String projectName, String role, LocalDate startDate
+            , LocalDate endDate, String description, String achievement, String techStack) {
+        if( projectName != null && !projectName.isEmpty() ) {
+            this.projectName = projectName;
+        }
+        if(role != null) {
+            this.role = role;
+        }
+        if(startDate != null) {
+            this.startDate = startDate;
+        }
+        if(endDate != null) {
+            this.endDate = endDate;
+        }
+        if(description != null) {
+            this.description = description;
+        }
+        if(achievement != null) {
+            this.achievement = achievement;
+        }
+        if(techStack != null) {
+            this.techStack = techStack;
+        }
+    }
 }
