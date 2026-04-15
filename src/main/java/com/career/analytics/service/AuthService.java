@@ -56,10 +56,12 @@ public class AuthService {
         );
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        String jwt = tokenProvider.generateToken(authentication);
+        String accessToken = tokenProvider.generateToken(authentication);
+        String refreshToken = tokenProvider.generateRefreshToken(authentication);
 
         return new TokenResponseDto(
-                jwt,
+                accessToken,
+                refreshToken,
                 savedUser.getId(),
                 savedUser.getEmail(),
                 signupDto.getName(),
@@ -78,8 +80,8 @@ public class AuthService {
 
         // getContext() 사용
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        String jwt = tokenProvider.generateToken(authentication);
-
+        String accessToken = tokenProvider.generateToken(authentication);
+        String refreshToken = tokenProvider.generateToken(authentication);
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
 
         //커스텀 예외 발생
@@ -90,7 +92,8 @@ public class AuthService {
         String name = profile != null ? profile.getName() : null;
 
         return new TokenResponseDto(
-                jwt,
+                accessToken,
+                refreshToken,
                 user.getId(),
                 user.getEmail(),
                 name,

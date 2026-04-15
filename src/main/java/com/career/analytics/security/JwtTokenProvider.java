@@ -16,12 +16,15 @@ public class JwtTokenProvider {
 
     private final SecretKey key; // 2. 타입 변경 완료
     private final long jwtExpirationMs;
-
+    private final long jwtRefreshExpirationMs;
     public JwtTokenProvider(
             @Value("${jwt.secret}") String jwtSecret,
-            @Value("${jwt.expiration}") long jwtExpirationMs) {
+            @Value("${jwt.expiration}") long jwtExpirationMs,
+            @Value("${jwt.refresh-expiration}") long jwtRefreshExpirationMs)
+    {
         this.key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
         this.jwtExpirationMs = jwtExpirationMs;
+        this.jwtRefreshExpirationMs = jwtRefreshExpirationMs;
     }
 
     // JWT 토큰 생성
@@ -38,7 +41,18 @@ public class JwtTokenProvider {
                 .signWith(key) // 0.12.x 최신 권장 방식 (알고리즘 자동 추론)
                 .compact();
     }
+    public String generateRefreshToken(Authentication authentication) {
+        UserDetailsImpl userPrincipal = (UserDetailsImpl) authentication.getPrincipal();
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + jwtRefreshExpirationMs);
 
+        return Jwts.builder()
+                .subject(Long.toString(userPrincipal.getId()))
+                .issuedAt(now)
+                .expiration(expiryDate)
+                .signWith(key)
+                .compact();
+    }
     // 토큰에서 사용자 ID 추출
     public Long getUserIdFromToken(String token) {
         Claims claims = Jwts.parser() // parserBuilder -> parser
