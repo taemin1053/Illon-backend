@@ -2,43 +2,49 @@ package com.career.analytics.service;
 
 import com.career.analytics.dto.LoginRequestDto;
 import com.career.analytics.dto.SignupRequestDto;
+import com.career.analytics.dto.SignupResponseDto;
 import com.career.analytics.dto.TokenResponseDto;
 import com.career.analytics.entity.Profile;
+import com.career.analytics.entity.RefreshToken; // 추가
 import com.career.analytics.entity.Role;
 import com.career.analytics.entity.Users;
 import com.career.analytics.exception.DuplicateEmailException;
 import com.career.analytics.exception.UserNotFoundException;
 import com.career.analytics.repository.ProfileRepository;
+import com.career.analytics.repository.RefreshTokenRepository; // 추가
 import com.career.analytics.repository.UserRepository;
 import com.career.analytics.security.JwtTokenProvider;
 import com.career.analytics.security.UserDetailsImpl;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+
 @Service
-@RequiredArgsConstructor //생성자 주입 자동화
+@RequiredArgsConstructor
 public class AuthService {
 
     private final UserRepository userRepository;
     private final ProfileRepository profileRepository;
+    private final RefreshTokenRepository refreshTokenRepository; // 1. 레포지토리 주입
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider tokenProvider;
 
     @Transactional
-    public TokenResponseDto signup(SignupRequestDto signupDto) {
-        //이메일 중복 체크
+    public SignupResponseDto signup(SignupRequestDto signupDto) {
         if(userRepository.existsByEmail(signupDto.getEmail())) {
-            throw new DuplicateEmailException("이미 사용 중인 이메일입니다.: " +signupDto.getEmail());
+            throw new DuplicateEmailException("이미 사용 중인 이메일입니다.: " + signupDto.getEmail());
         }
 
-        //User 엔티티 생성
         Users user = Users.builder()
                 .email(signupDto.getEmail())
                 .password(passwordEncoder.encode(signupDto.getPassword()))
@@ -46,58 +52,73 @@ public class AuthService {
                 .build();
         Users savedUser = userRepository.save(user);
 
-        //Profile 엔티티 생성
         Profile profile = Profile.createProfile(savedUser, signupDto);
         profileRepository.save(profile);
 
-        //자동 로그인 jwt 토큰 발급
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(signupDto.getEmail(), signupDto.getPassword())
-        );
 
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-        String accessToken = tokenProvider.generateToken(authentication);
-        String refreshToken = tokenProvider.generateRefreshToken(authentication);
 
-        return new TokenResponseDto(
-                accessToken,
-                refreshToken,
-                savedUser.getId(),
-                savedUser.getEmail(),
-                signupDto.getName(),
-                savedUser.getRole().name()
-        );
+        return new SignupResponseDto(user.getEmail(), user.getProfile().getName(),
+                user.getCreatedAt());
     }
 
-    @Transactional(readOnly = true)
+    /**
+     *3. readOnly = true 제거
+     * 이제 DB에 리프레시 토큰을 저장/수정해야 하므로 쓰기 권한이 필요합니다.
+     */
+    @Transactional
     public TokenResponseDto login(LoginRequestDto loginDto){
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        loginDto.getEmail(),
-                        loginDto.getPassword()
-                )
+                new UsernamePasswordAuthenticationToken(loginDto.getEmail(), loginDto.getPassword())
         );
 
-        // getContext() 사용
         SecurityContextHolder.getContext().setAuthentication(authentication);
         String accessToken = tokenProvider.generateToken(authentication);
-        String refreshToken = tokenProvider.generateToken(authentication);
+
+        // 🚀 4. 기존 코드 버그 수정 (generateToken -> generateRefreshToken)
+        String refreshToken = tokenProvider.generateRefreshToken(authentication);
+
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
 
-        //커스텀 예외 발생
         Users user = userRepository.findById(userDetails.getId())
                 .orElseThrow(()-> new UserNotFoundException("사용자를 찾을 수 없습니다. ID: " + userDetails.getId()));
 
         Profile profile = profileRepository.findByUserId(user.getId()).orElse(null);
         String name = profile != null ? profile.getName() : null;
 
+        // 🚀 5. 리프레시 토큰 Upsert (존재하면 수정, 없으면 생성)
+        saveRefreshToken(user, refreshToken);
+
         return new TokenResponseDto(
-                accessToken,
-                refreshToken,
-                user.getId(),
-                user.getEmail(),
-                name,
-                user.getRole().name()
+                accessToken, refreshToken, user.getId(),
+                user.getEmail(), name, user.getRole().name()
         );
+    }
+
+    /**
+     * 6. 로그아웃 (DB에서 토큰 삭제)
+     */
+    @Transactional
+    public void logout(Long userId) { // <-- 이렇게 Long 타입으로 변경!
+        refreshTokenRepository.findByUserId(userId)
+                .ifPresent(refreshTokenRepository::delete);
+    }
+
+     //리프레시 토큰 저장/수정 공통 로직 (Upsert)
+
+    private void saveRefreshToken(Users user, String token) {
+        LocalDateTime expiresAt = LocalDateTime.now().plusDays(14);
+
+        refreshTokenRepository.findByUserId(user.getId())
+                .ifPresentOrElse(
+                        existingToken -> existingToken.updateToken(token, expiresAt),
+                        () -> {
+                            RefreshToken newToken = RefreshToken.builder()
+                                    .user(user)
+                                    .token(token)
+                                    .expiresAt(expiresAt)
+                                    .build();
+                            refreshTokenRepository.save(newToken);
+                        }
+                );
     }
 }
