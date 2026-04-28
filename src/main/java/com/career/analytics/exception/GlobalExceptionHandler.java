@@ -37,8 +37,30 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
-    //사용자 없음 예외 처리
+    //수상 정보 없음
+    @ExceptionHandler(AwardNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleAwardNotFound(AwardNotFoundException ex) {
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.NOT_FOUND.value())
+                .error("Language Not Found")
+                .message(ex.getMessage())
+                .build();
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
 
+    //포트폴리오 정보 없음
+    @ExceptionHandler(PortfolioNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handlePortfolioNotFound(PortfolioNotFoundException ex) {
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.NOT_FOUND.value())
+                .error("Portfolio Not Found")
+                .message(ex.getMessage()) // 우리가 만든 "포트폴리오를 찾을수 없습니다 ID : n" 출력
+                .build();
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+    //사용자 없음 예외 처리
     @ExceptionHandler(UserNotFoundException.class)
     public ResponseEntity<ErrorResponse>handleUserNotFound(UserNotFoundException ex){
         ErrorResponse error = ErrorResponse.builder()
@@ -134,16 +156,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
-    @ExceptionHandler(ProjectAchievementNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleProjectAchievementNotFound(ProjectAchievementNotFoundException ex) {
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
-                .status(HttpStatus.NOT_FOUND.value())
-                .error("Project Not Found")
-                .message(ex.getMessage())
-                .build();
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
-    }
+
     //자격증 예외
     @ExceptionHandler(CertificationNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleCertificationNotFound(CertificationNotFoundException ex) {
@@ -151,6 +164,17 @@ public class GlobalExceptionHandler {
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.NOT_FOUND.value())
                 .error("Certification Not found")
+                .message(ex.getMessage())
+                .build();
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+    //자소서 예외
+    @ExceptionHandler(CoverLetterException.class)
+    public ResponseEntity<ErrorResponse> handleCoverLetterException(CoverLetterException ex) {
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.NO_CONTENT.value())
+                .error("Cover Letter Not Found")
                 .message(ex.getMessage())
                 .build();
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);

@@ -67,5 +67,11 @@ public class Language {
             this.testName = testName;
 
         }
+        if(score!=null){
+            this.score = score;
+        }
+        if (testDate != null) {
+            this.testDate = testDate;
+        }
     }
 }

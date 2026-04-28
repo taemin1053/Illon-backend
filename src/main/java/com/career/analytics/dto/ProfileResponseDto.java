@@ -18,6 +18,8 @@ public class ProfileResponseDto {
     private Gender gender;
     private LocalDate birthDate;
     private String bio;
+    private String phone;
+    private String profileImageUrl;
     private LocalDateTime updateDate;
 
     public ProfileResponseDto(Profile profile) {
@@ -28,5 +30,7 @@ public class ProfileResponseDto {
         this.birthDate = profile.getBirthDate();
         this.bio = profile.getBio();
         this.updateDate = profile.getUpdatedAt();
+        this.profileImageUrl = profile.getProfileImageUrl();
+        this.phone = profile.getPhone();
     }
 }

@@ -40,14 +40,14 @@ public class LanguageController {
     @PutMapping("/{languageId}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<LanguageResponseDto> updateLanguage(
-            @PathVariable Long languageId,
+            @PathVariable("languageId") Long languageId,
             @Valid @RequestBody LanguageRequestDto dto) {
         return ResponseEntity.ok(languageService.updateLanguage(languageId, dto));
     }
     @Operation(summary = "어학 정보 삭제", description = "ID에 해당하는 어학 정보를 삭제합니다. 본인 데이터만 삭제 가능합니다.")
     @DeleteMapping("/{languageId}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Void> deleteLanguage(@PathVariable Long languageId) {
+    public ResponseEntity<Void> deleteLanguage(@PathVariable("languageId") Long languageId) {
         languageService.deleteLanguage(languageId);
         return ResponseEntity.noContent().build();
     }

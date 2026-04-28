@@ -7,6 +7,8 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-interface PortfolioRepository extends JpaRepository<Portfolio, Long> {
+public interface PortfolioRepository extends JpaRepository<Portfolio, Long> {
     List<Portfolio> findByUserId(Long userId);
+
+    List<Portfolio> findByUserIdOrderByCreatedAtDesc(Long userId);
 }

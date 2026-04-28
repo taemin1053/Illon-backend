@@ -26,9 +26,6 @@ public class ScrapedJob {
     @JoinColumn(name = "user_id", nullable = false)
     private Users user;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "job_posting_id",nullable = false)
-    private JobPosting jobPosting;
 
     @CreatedDate
     @Column(nullable = false, updatable = false, name = "created_at")

@@ -27,5 +27,7 @@ public class WorkExperienceRequestDto {
 
     private LocalDate endDate;
 
+    private String description;
+
     private final Boolean isCurrent = false; // 현재 재직 중
 }

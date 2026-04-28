@@ -27,6 +27,8 @@ public class UserFullProfileResponseDto {
     private LocalDate birthDate;
     private String bio;
     private LocalDateTime profileUpdatedAt;
+    private String profileImageUrl;
+    private String phone;
 
     public UserFullProfileResponseDto(Users user, Profile profile) {
         //Users 정보
@@ -45,6 +47,8 @@ public class UserFullProfileResponseDto {
             this.birthDate = profile.getBirthDate();
             this.bio = profile.getBio();
             this.profileUpdatedAt = profile.getUpdatedAt();
+            this.profileImageUrl = profile.getProfileImageUrl();
+            this.phone = profile.getPhone();
         } else {
             this.hasProfile = false;
         }

@@ -20,6 +20,7 @@ public class WorkExperienceResponseDto {
     private final Boolean isCurrent;
     private final LocalDateTime createdAt;
     private final LocalDateTime updatedAt;
+    private final String description;
 
     public WorkExperienceResponseDto(WorkExperience workExperience) {
         this.id = workExperience.getId();
@@ -29,10 +30,8 @@ public class WorkExperienceResponseDto {
         this.role = workExperience.getRole();
         this.startDate = workExperience.getStartDate();
         this.endDate = workExperience.getEndDate();
-
-
+        this.description = workExperience.getDescription();
         this.isCurrent = workExperience.isCurrent();
-
         this.createdAt = workExperience.getCreatedAt();
         this.updatedAt = workExperience.getUpdatedAt();
     }

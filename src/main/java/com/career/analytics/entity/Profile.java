@@ -44,6 +44,12 @@ public class Profile {
     @LastModifiedDate
     @Column(nullable = false, name = "updated_at")
     private LocalDateTime updatedAt;
+    @Column
+    private String phone;
+
+    @Column(name = "profile_image_url", length = 500)
+    private String profileImageUrl;
+
 
     //profile 생성자
     public static Profile createProfile(Users user, SignupRequestDto signupDto) {
@@ -53,10 +59,12 @@ public class Profile {
                 .gender(signupDto.getGender())
                 .birthDate(signupDto.getBirthDay())
                 .bio(signupDto.getBio())
+                .phone(signupDto.getPhone())
+                .profileImageUrl(signupDto.getProfileImageUrl())
                 .build();
     }
     //profile update 메서드
-    public void updateProfile(String name, Gender gender, LocalDate birthDate, String bio) {
+    public void updateProfile(String name, Gender gender, LocalDate birthDate, String bio, String phone, String profileImageUrl) {
         if(name != null && !name.isEmpty()){
             this.name = name;
         }
@@ -68,6 +76,12 @@ public class Profile {
         }
         if(bio != null){
             this.bio = bio;
+        }
+        if(phone!=null){
+            this.phone = phone;
+        }
+        if(profileImageUrl != null){
+            this.profileImageUrl = profileImageUrl;
         }
     }
 

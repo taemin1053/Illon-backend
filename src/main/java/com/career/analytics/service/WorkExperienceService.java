@@ -50,7 +50,8 @@ public class WorkExperienceService {
                 workExperienceRequestDto.getRole(),
                 workExperienceRequestDto.getStartDate(),
                 workExperienceRequestDto.getEndDate(),
-                workExperienceRequestDto.getIsCurrent()
+                workExperienceRequestDto.getIsCurrent(),
+                workExperienceRequestDto.getDescription()
         );
         WorkExperience savedWorkExperience = workExperienceRepository.save(workExperience);
         return new WorkExperienceResponseDto(savedWorkExperience); // 세미콜론 추가!
@@ -76,7 +77,8 @@ public class WorkExperienceService {
                 dto.getRole(),
                 dto.getStartDate(),
                 dto.getEndDate(),
-                dto.getIsCurrent()
+                dto.getIsCurrent(),
+                dto.getDescription()
         );
 
         return new WorkExperienceResponseDto(workExperience);

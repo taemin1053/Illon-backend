@@ -43,9 +43,9 @@ public class WorkExperience {
     @Column(name = "end_date")
     private LocalDate endDate;
 
-    @Builder.Default // ✅ 빌더 사용 시 기본값 유지
+    @Builder.Default
     @Column(nullable = false, name = "is_current")
-    private boolean isCurrent = false; // ✅ null 위험이 없는 원시 타입(boolean)으로 변경
+    private boolean isCurrent = false;
 
     @CreatedDate
     @Column(nullable = false, updatable = false, name = "created_at")
@@ -55,12 +55,14 @@ public class WorkExperience {
     @Column(nullable = false, name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(columnDefinition = "TEXT")
+    private String description;
     //  정적 팩토리 메서드
 
 
      //경력 정보 생성
     public static WorkExperience create(Users user, String companyName, String department,
-                                        String role, LocalDate startDate, LocalDate endDate, boolean isCurrent) {
+                                        String role, LocalDate startDate, LocalDate endDate, boolean isCurrent ,String description) {
         return WorkExperience.builder()
                 .user(user)
                 .companyName(companyName)
@@ -69,6 +71,7 @@ public class WorkExperience {
                 .startDate(startDate)
                 .endDate(endDate)
                 .isCurrent(isCurrent)
+                .description(description)
                 .build();
     }
 
@@ -78,7 +81,7 @@ public class WorkExperience {
      // 경력 정보 업데이트
 
     public void update(String companyName, String department, String role,
-                       LocalDate startDate, LocalDate endDate, Boolean isCurrent) {
+                       LocalDate startDate, LocalDate endDate, Boolean isCurrent, String description) {
         if (companyName != null && !companyName.isEmpty()) {
             this.companyName = companyName;
         }
@@ -99,6 +102,9 @@ public class WorkExperience {
             if (this.isCurrent) {
                 this.endDate = null;
             }
+        }
+        if (description != null) {
+            this.description = description;
         }
     }
 }
