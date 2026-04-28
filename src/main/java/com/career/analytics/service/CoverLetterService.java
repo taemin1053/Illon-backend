@@ -55,7 +55,7 @@ public class CoverLetterService {
     }
 
     public List<CoverLetterResponseDto> getMyCoverLetters(Long userId) {
-        return coverLetterRepository.findAllByUser(userId).stream()
+        return coverLetterRepository.findAllByUserId(userId).stream()
                 .map(CoverLetterResponseDto::from)
                 .collect(Collectors.toList());
     }

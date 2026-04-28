@@ -28,6 +28,5 @@ public class Company {
     private String description;
 
 
-    @OneToMany(mappedBy = "company", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<CoverLetter> coverLetters = new ArrayList<>();
+
 }

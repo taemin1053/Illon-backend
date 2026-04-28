@@ -8,6 +8,6 @@ import java.util.List;
 import java.util.Optional;
 
 public interface CoverLetterRepository extends JpaRepository<CoverLetter, Long> {
-    List<CoverLetter> findAllByUser(Long userId);
+    List<CoverLetter> findAllByUserId(Long userId);
     Optional<CoverLetter> findByIdAndUser(Long id, Users user);
 }
