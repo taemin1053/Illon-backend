@@ -3,7 +3,6 @@ package com.career.analytics.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -11,7 +10,6 @@ import java.time.LocalDate;
 
 @Getter
 @NoArgsConstructor
-@AllArgsConstructor
 public class WorkExperienceRequestDto {
 
     @NotBlank(message = "회사명은 필수입니다")
@@ -31,5 +29,5 @@ public class WorkExperienceRequestDto {
 
     private String description;
 
-    private  Boolean isCurrent = false; // 현재 재직 중
+    private final Boolean isCurrent = false; // 현재 재직 중
 }

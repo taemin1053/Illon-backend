@@ -1,9 +1,10 @@
 package com.career.analytics.entity;
 
-
+import com.career.analytics.dto.SignupRequestDto;
 import jakarta.persistence.*;
 import lombok.*;
-import org.apache.commons.lang3.StringUtils;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -21,7 +22,6 @@ import java.time.LocalDateTime;
 public class Profile {
     @Id
     @GeneratedValue(strategy =GenerationType.IDENTITY)
-    @Column(name = "profiles_id" , nullable = false, unique = true)
     private Long id;
 
 
@@ -31,7 +31,6 @@ public class Profile {
 
     @Column(nullable = false, length = 50)
     private String name;
-
     @Enumerated(EnumType.STRING)
     @Column(length = 10)
     private Gender gender;
@@ -45,59 +44,44 @@ public class Profile {
     @LastModifiedDate
     @Column(nullable = false, name = "updated_at")
     private LocalDateTime updatedAt;
-
     @Column
     private String phone;
 
     @Column(name = "profile_image_url", length = 500)
     private String profileImageUrl;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "career_level", length = 20)
-    private CareerLevel careerLevel;
-
 
     //profile 생성자
-    public static Profile createProfile(Users user, String name, Gender gender,
-                                        LocalDate birthDate, String bio, String phone, String profileImageUrl, CareerLevel careerLevel) {
+    public static Profile createProfile(Users user, SignupRequestDto signupDto) {
         return Profile.builder()
                 .user(user)
-                .name(name)
-                .gender(gender)
-                .birthDate(birthDate)
-                .bio(bio)
-                .phone(phone)
-                .profileImageUrl(profileImageUrl)
-                .careerLevel(careerLevel)
+                .name(signupDto.getName())
+                .gender(signupDto.getGender())
+                .birthDate(signupDto.getBirthDay())
+                .bio(signupDto.getBio())
+                .phone(signupDto.getPhone())
+                .profileImageUrl(signupDto.getProfileImageUrl())
                 .build();
     }
-    //profile update 메서드 -> 문자열 검증 업그레이드 StringUtils
-    public void updateProfile(String name, Gender gender, LocalDate birthDate,
-                              String bio, String phone, String profileImageUrl, CareerLevel careerLevel) {
-
-        // 1. 문자열 (String) 방어: null 아님 + 공백만 있는 게 아님
-        if (name != null && !name.trim().isEmpty()) {
+    //profile update 메서드
+    public void updateProfile(String name, Gender gender, LocalDate birthDate, String bio, String phone, String profileImageUrl) {
+        if(name != null && !name.isEmpty()){
             this.name = name;
         }
-        if (bio != null && !bio.trim().isEmpty()) {
-            this.bio = bio;
-        }
-        if (phone != null && !phone.trim().isEmpty()) {
-            this.phone = phone;
-        }
-        if (profileImageUrl != null && !profileImageUrl.trim().isEmpty()) {
-            this.profileImageUrl = profileImageUrl;
-        }
-
-        // 2. 객체 타입 (Enum, LocalDate) 방어: null 아님
-        if (gender != null) {
+        if(gender !=null){
             this.gender = gender;
         }
-        if (birthDate != null) {
+        if(birthDate != null){
             this.birthDate = birthDate;
         }
-        if (careerLevel != null) {
-            this.careerLevel = careerLevel;
+        if(bio != null){
+            this.bio = bio;
+        }
+        if(phone!=null){
+            this.phone = phone;
+        }
+        if(profileImageUrl != null){
+            this.profileImageUrl = profileImageUrl;
         }
     }
 

@@ -1,8 +1,10 @@
 package com.career.analytics.dto;
 
-import com.career.analytics.entity.CareerLevel;
 import com.career.analytics.entity.Gender;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -37,7 +39,5 @@ public class SignupRequestDto {
     private String phone;
 
     private String profileImageUrl;
-    @NotNull(message = "경력 수준(신입/경력)을 선택해주세요.")
-    private CareerLevel careerLevel;
 
 }

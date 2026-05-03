@@ -57,9 +57,7 @@ public class ProfileService {
                 profileDto.getBirthDate(),
                 profileDto.getBio(),
                 profileDto.getPhone(),
-                profileDto.getProfileImageUrl(),
-                profileDto.getCareerLevel()
-
+                profileDto.getProfileImageUrl()
         );
 
         return new ProfileResponseDto(profile);

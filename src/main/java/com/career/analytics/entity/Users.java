@@ -32,7 +32,7 @@ public class Users {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
-    private Role role = Role.USER; //관리자는 Update 수정해서 관리자 아이디 만들기
+    private Role role = Role.USER; //관리자는 Update로 수정해서 관리자 아이디 만들기
 
     @CreatedDate
     @Column(nullable = false, updatable = false, name = "created_at")
@@ -47,25 +47,44 @@ public class Users {
     //profile에 있는 user필드에 매핑,
     //cascade 폭포수 효과 Users 객체를 저장(save)하거나 삭제(delete)할 때, 연결된 Profile 객체도 자동으로 같이 저장되거나 삭제
     //연결되지 않은 객체 삭제
-    // 1. 프로필
     private Profile profile;
 
-    // 2. 인증 관련
     @Builder.Default
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<SocialLogin> socialLogins = new ArrayList<>();
 
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private RefreshToken refreshToken;
-
-
-    // 유저는 이제 이력서를 통해 자신의 경력/학력/자소서를 관리
     @Builder.Default
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Resume> resumes = new ArrayList<>();
+    private List<Education> educations = new ArrayList<>();
 
-    //스크랩
+    @Builder.Default
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<WorkExperience> workExperiences = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Certification> certifications = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Language> languages = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Award> awards = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Portfolio> portfolios = new ArrayList<>();
+
     @Builder.Default
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ScrapedJob> scrapedJobs = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CoverLetter> coverLetters = new ArrayList<>();
+
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private RefreshToken refreshToken;
 }

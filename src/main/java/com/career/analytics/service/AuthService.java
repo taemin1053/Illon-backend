@@ -52,9 +52,7 @@ public class AuthService {
                 .build();
         Users savedUser = userRepository.save(user);
 
-        Profile profile = Profile.createProfile(savedUser,
-                signupDto.getName(), signupDto.getGender(),signupDto.getBirthDay(),
-                signupDto.getBio(), signupDto.getPhone(), signupDto.getProfileImageUrl(),signupDto.getCareerLevel());
+        Profile profile = Profile.createProfile(savedUser, signupDto);
         profileRepository.save(profile);
 
 
