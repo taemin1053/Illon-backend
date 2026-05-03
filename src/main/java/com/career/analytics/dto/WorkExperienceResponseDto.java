@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 public class WorkExperienceResponseDto {
 
     private final Long id;
-    private final Long userId;
+    private final Long resumeId;
     private final String companyName;
     private final String department;
     private final String role;
@@ -24,7 +24,7 @@ public class WorkExperienceResponseDto {
 
     public WorkExperienceResponseDto(WorkExperience workExperience) {
         this.id = workExperience.getId();
-        this.userId = workExperience.getUser().getId();
+        this.resumeId = workExperience.getResume().getId();
         this.companyName = workExperience.getCompanyName();
         this.department = workExperience.getDepartment();
         this.role = workExperience.getRole();

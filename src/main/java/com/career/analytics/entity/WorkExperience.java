@@ -1,9 +1,10 @@
 package com.career.analytics.entity;
 
-// ✅ DTO import 문을 완전히 날려버렸습니다! (순수한 도메인 유지)
-import com.career.analytics.entity.Users;
+
+
 import jakarta.persistence.*;
 import lombok.*;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -25,8 +26,8 @@ public class WorkExperience {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private Users user;
+    @JoinColumn(name = "resume_id", nullable = false)
+    private Resume resume;
 
     @Column(nullable = false, length = 100, name = "company_name")
     private String companyName;
@@ -61,10 +62,10 @@ public class WorkExperience {
 
 
      //경력 정보 생성
-    public static WorkExperience create(Users user, String companyName, String department,
+    public static WorkExperience create(Resume resume, String companyName, String department,
                                         String role, LocalDate startDate, LocalDate endDate, boolean isCurrent ,String description) {
         return WorkExperience.builder()
-                .user(user)
+                .resume(resume)
                 .companyName(companyName)
                 .department(department)
                 .role(role)
@@ -82,13 +83,13 @@ public class WorkExperience {
 
     public void update(String companyName, String department, String role,
                        LocalDate startDate, LocalDate endDate, Boolean isCurrent, String description) {
-        if (companyName != null && !companyName.isEmpty()) {
+        if (StringUtils.isNotBlank(companyName)) {
             this.companyName = companyName;
         }
-        if (department != null) {
+        if (StringUtils.isNotBlank(department)) {
             this.department = department;
         }
-        if (role != null) {
+        if (StringUtils.isNotBlank(role)) {
             this.role = role;
         }
         if (startDate != null) {
@@ -103,7 +104,7 @@ public class WorkExperience {
                 this.endDate = null;
             }
         }
-        if (description != null) {
+        if (StringUtils.isNotBlank(description)) {
             this.description = description;
         }
     }
