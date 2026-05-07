@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class PortfolioResponseDto {
     private Long id;
-    private Long userId;
+    private Long resumeId;
     private String portfolioName;
     private String url;
     private LocalDateTime createdAt;
@@ -21,7 +21,7 @@ public class PortfolioResponseDto {
     public static PortfolioResponseDto from(Portfolio portfolio) {
         return PortfolioResponseDto.builder()
                 .id(portfolio.getId())
-                .userId(portfolio.getUser().getId())
+                .resumeId(portfolio.getResume().getId())
                 .portfolioName(portfolio.getPortfolioName())
                 .url(portfolio.getUrl())
                 .createdAt(portfolio.getCreatedAt())

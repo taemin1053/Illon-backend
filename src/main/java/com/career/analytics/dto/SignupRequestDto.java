@@ -20,7 +20,7 @@ public class SignupRequestDto {
     @Size(min = 8, message = "비밀번호는 최소 8자 이상이어야 합니다.")
     private String password;
 
-    //profile 정보
+    /*
     @NotBlank(message = "이름은 필수입니다.")
     @Size(min = 2, max = 5)
     private String name;
@@ -38,6 +38,6 @@ public class SignupRequestDto {
 
     private String profileImageUrl;
     @NotNull(message = "경력 수준(신입/경력)을 선택해주세요.")
-    private CareerLevel careerLevel;
+    private CareerLevel careerLevel;*/
 
 }

@@ -2,6 +2,7 @@ package com.career.analytics.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -18,11 +19,11 @@ import java.time.LocalDateTime;
 public class Portfolio {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long id;
+    private Long id; //long에서 객체 Long으로 변경
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private Users user;
+    @JoinColumn(name = "resume_id", nullable = false)
+    private Resume resume;
 
     @Column(nullable = false, length = 200)
     private String portfolioName;
@@ -38,13 +39,25 @@ public class Portfolio {
     @Column(nullable = false, name = "updated_at")
     private LocalDateTime updatedAt;
 
-    public void updatePortfolio(String portfolioName, String url ) {
+    public void update(String portfolioName,String url ) {
 
-        if(portfolioName != null && !portfolioName.isEmpty()){
+        if(StringUtils.isNotBlank(portfolioName)){
             this.portfolioName = portfolioName;
         }
-        if(url != null && !url.isEmpty()){
+        if(StringUtils.isNotBlank(url)){
             this.url = url;
         }
+    }
+    public static Portfolio create(Resume resume,String portfolioName,String url) {
+       return Portfolio.builder()
+               .resume(resume)
+               .portfolioName(portfolioName)
+               .url(url)
+               .build();
+    }
+
+    //양방향 연관관계를 위한 편의 메서드 추가
+    public void setResume(Resume resume) {
+        this.resume = resume;
     }
 }

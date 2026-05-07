@@ -1,7 +1,6 @@
 
 package com.career.analytics.entity;
 
-import com.career.analytics.entity.*;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
@@ -16,6 +15,7 @@ import java.util.List;
 @Entity
 @Table(name = "resumes")
 @Getter
+@Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
@@ -37,7 +37,7 @@ public class Resume {
     @Column(nullable = false, length = 100)
     private String title; // 이력서 관리용 제목 (예: "네이버 지원용", "토스 지원용")
 
-    @Column(name = "is_default")
+    @Builder.Default
     private Boolean isDefault = false; // 기본 이력서 여부
 
     @CreatedDate
@@ -68,10 +68,13 @@ public class Resume {
 
     @Builder.Default
     @OneToMany(mappedBy = "resume", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Portfolio> links = new ArrayList<>(); // UI 하단의 포트폴리오/링크 리스트
+    private List<Portfolio> portfolios = new ArrayList<>(); // UI 하단의 포트폴리오/링크 리스트
 
     @OneToOne(mappedBy = "resume", cascade = CascadeType.ALL, orphanRemoval = true)
     private CoverLetter coverLetter; // 자기소개서
+    @Builder.Default
+    @OneToMany(mappedBy = "resume", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Certification> certifications = new ArrayList<>();
 
     // ========== 연관 관계 편의 메서드 (객체 지향적 양방향 세팅) ==========
 
@@ -89,8 +92,8 @@ public class Resume {
         }
     }
 
-    public void addLink(Portfolio portfolio) {
-        this.links.add(portfolio);
+    public void addPortfolio(Portfolio portfolio) {
+        this.portfolios.add(portfolio);
         if (portfolio.getResume() != this) {
             portfolio.setResume(this);
         }
@@ -100,6 +103,13 @@ public class Resume {
         this.coverLetter = coverLetter;
         if (coverLetter.getResume() != this) {
             coverLetter.setResume(this);
+        }
+    }
+
+    public void addCertification(Certification certification) {
+        this.certifications.add(certification);
+        if (certification.getResume() != this) {
+            certification.setResume(this);
         }
     }
 

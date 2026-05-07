@@ -29,7 +29,7 @@ public class Profile {
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private Users user;
 
-    @Column(nullable = false, length = 50)
+    @Column( nullable = true, length = 50)
     private String name;
 
     @Enumerated(EnumType.STRING)
@@ -99,6 +99,11 @@ public class Profile {
         if (careerLevel != null) {
             this.careerLevel = careerLevel;
         }
+    }
+    public static Profile createEmptyProfile(Users user) {
+        return Profile.builder()
+                .user(user)
+                .build();
     }
 
 }

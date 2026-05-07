@@ -68,4 +68,8 @@ public class Users {
     @Builder.Default
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ScrapedJob> scrapedJobs = new ArrayList<>();
+    // Users.java 파일 내부에 추가
+    public void setProfile(Profile profile) {
+        this.profile = profile;
+    }
 }

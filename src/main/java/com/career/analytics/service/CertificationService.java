@@ -3,12 +3,12 @@ package com.career.analytics.service;
 import com.career.analytics.dto.CertificationRequestDto;
 import com.career.analytics.dto.CertificationResponseDto;
 import com.career.analytics.entity.Certification;
-import com.career.analytics.entity.Users;
+import com.career.analytics.entity.Resume;
 import com.career.analytics.exception.CertificationNotFoundException;
+import com.career.analytics.exception.ResumeNotFoundException;
 import com.career.analytics.exception.UnauthorizedAccessException;
-import com.career.analytics.exception.UserNotFoundException;
 import com.career.analytics.repository.CertificationRepository;
-import com.career.analytics.repository.UserRepository;
+import com.career.analytics.repository.ResumeRepository;
 import com.career.analytics.security.UserDetailsImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -22,65 +22,83 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class CertificationService {
-    private final CertificationRepository certificationRepository;
-    private final UserRepository userRepository;
 
-    //자격증 조회
+    private final CertificationRepository certificationRepository;
+    // ✨ 1. UserRepository 퇴출, ResumeRepository 등판!
+    private final ResumeRepository resumeRepository;
+
+    // 자격증 조회
     @Transactional(readOnly = true)
-    public List<CertificationResponseDto> getMyCertifications() {
+    public List<CertificationResponseDto> getCertificationsByResume(Long resumeId) { // ✨ 파라미터 변경
         Long userId = getCurrentUserId();
 
-        return certificationRepository.findByUserIdOrderByIssueDateDesc(userId).stream()
+        // ✨ 이력서 존재 및 소유권 검증
+        Resume resume = resumeRepository.findById(resumeId)
+                .orElseThrow(() -> new ResumeNotFoundException(resumeId));
+        if (!resume.getUser().getId().equals(userId)) {
+            throw new UnauthorizedAccessException("본인의 이력서 정보만 조회할 수 있습니다.");
+        }
+
+        return certificationRepository.findByResumeIdOrderByIssueDateDesc(resumeId).stream() // ✨ 최신 Repository 메서드 사용
                 .map(CertificationResponseDto::new)
                 .collect(Collectors.toList());
     }
 
-    //자격증 추가
+    // 자격증 추가
     @Transactional
-    public CertificationResponseDto createCertification(CertificationRequestDto dto){
+    public CertificationResponseDto createCertification(Long resumeId, CertificationRequestDto dto){ // ✨ 파라미터 변경
         Long userId = getCurrentUserId();
 
-        Users user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException(userId));
+        // ✨ 이력서 조회 및 소유권 검증
+        Resume resume = resumeRepository.findById(resumeId)
+                .orElseThrow(() -> new ResumeNotFoundException(resumeId));
+        if (!resume.getUser().getId().equals(userId)) {
+            throw new UnauthorizedAccessException("본인의 이력서에만 자격증을 추가할 수 있습니다.");
+        }
 
-        //빌더 사용
-        Certification certification =Certification.builder()
-                .user(user)
-                .certificationName(dto.getCertificationName())
-                .issuingOrganization(dto.getIssuingOrganization())
-                .issueDate(dto.getIssueDate())
-                .expiryDate(dto.getExpiryDate())
-                .build();
+        // ✨ 2. 날것의 Builder를 버리고, 우리가 만든 완벽한 정적 팩토리 메서드(create) 사용!
+        Certification certification = Certification.create(
+                resume,
+                dto.getCertificationName(),
+                dto.getIssuingOrganization(),
+                dto.getIssueDate(),
+                dto.getExpiryDate(),
+                // ✨ 3. 방금 뚫어놓은 상세 내용(description) 완벽하게 꽂아 넣기!
+                dto.getDescription()
+        );
 
         Certification savedCertification = certificationRepository.save(certification);
 
         return new CertificationResponseDto(savedCertification);
     }
 
-    //자격증 수정
+    // 자격증 수정
     @Transactional
-    public CertificationResponseDto updateCertification(Long certificationId,CertificationRequestDto dto){
+    public CertificationResponseDto updateCertification(Long certificationId, CertificationRequestDto dto){
         Long userId = getCurrentUserId();
 
         Certification certification = certificationRepository.findById(certificationId)
                 .orElseThrow(() -> new CertificationNotFoundException(certificationId));
 
-        //본인 확인
-        if (!certification.getUser().getId().equals(userId)) {
+        // ✨ 4. 본인 확인 로직 변경: certification -> resume -> user 순으로 타고 올라감
+        if (!certification.getResume().getUser().getId().equals(userId)) {
             throw new UnauthorizedAccessException("본인의 자격증만 수정가능합니다.");
         }
+
+        // ✨ update 메서드에 description 파라미터 추가!
         certification.update(
                 dto.getCertificationName(),
                 dto.getIssuingOrganization(),
                 dto.getIssueDate(),
-                dto.getExpiryDate()
+                dto.getExpiryDate(),
+                dto.getDescription()
         );
 
-        //더티 채킹
+        // 더티 체킹
         return new CertificationResponseDto(certification);
     }
 
-    //자격증 삭제
+    // 자격증 삭제
     @Transactional
     public void deleteCertification(Long certificationId){
         Long userId = getCurrentUserId();
@@ -88,10 +106,11 @@ public class CertificationService {
         Certification certification = certificationRepository.findById(certificationId)
                 .orElseThrow(() -> new CertificationNotFoundException(certificationId));
 
-        //본인 확인
-        if( !certification.getUser().getId().equals(userId)) {
-            throw new UnauthorizedAccessException("본인 자격증만 삭제 가능");
+        // ✨ 본인 확인 로직 변경
+        if(!certification.getResume().getUser().getId().equals(userId)) {
+            throw new UnauthorizedAccessException("본인 자격증만 삭제 가능합니다.");
         }
+
         certificationRepository.delete(certification);
     }
 

@@ -41,28 +41,34 @@ public class AuthService {
 
     @Transactional
     public SignupResponseDto signup(SignupRequestDto signupDto) {
+        // 1. 중복 이메일 체크
         if(userRepository.existsByEmail(signupDto.getEmail())) {
             throw new DuplicateEmailException("이미 사용 중인 이메일입니다.: " + signupDto.getEmail());
         }
 
+        // 2. 보안 껍데기(Users) 생성
         Users user = Users.builder()
                 .email(signupDto.getEmail())
                 .password(passwordEncoder.encode(signupDto.getPassword()))
                 .role(Role.USER)
                 .build();
-        Users savedUser = userRepository.save(user);
 
-        Profile profile = Profile.createProfile(savedUser,
-                signupDto.getName(), signupDto.getGender(),signupDto.getBirthDay(),
-                signupDto.getBio(), signupDto.getPhone(), signupDto.getProfileImageUrl(),signupDto.getCareerLevel());
-        profileRepository.save(profile);
+        // 3. 텅 빈 프로필 생성 및 유저 연동
 
+        Profile profile = Profile.builder()
+                .user(user)
+                .build();
 
+        // 4. 연관관계 설정 (Users의 CascadeType.ALL 활용)
 
-        return new SignupResponseDto(user.getEmail(), user.getProfile().getName(),
-                user.getCreatedAt());
+        user.setProfile(profile);
+
+        // 5. 저장 (유저를 저장하면 프로필도 함께 저장됩니다)
+        userRepository.save(user);
+
+        // 6. 응답 반환 (이름 필드가 빠진 SignupResponseDto 사용)
+        return new SignupResponseDto(user.getEmail(), user.getCreatedAt());
     }
-
     /**
      *3. readOnly = true 제거
      * 이제 DB에 리프레시 토큰을 저장/수정해야 하므로 쓰기 권한이 필요합니다.
