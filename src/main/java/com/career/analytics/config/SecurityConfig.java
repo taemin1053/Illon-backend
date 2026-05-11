@@ -83,10 +83,17 @@ public class SecurityConfig {
     }
 
     // 🚀 추가됨: CORS 설정 빈 (프론트엔드 연동)
+    // 🚀 수정됨: CORS 설정 빈 (로컬 및 Vercel 프론트엔드 연동)
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:3000"));
+
+        // localhost는 로컬 테스트용, vercel url은 실제 배포된 프론트엔드용
+        configuration.setAllowedOrigins(List.of(
+                "http://localhost:3000",
+                "https://illo-on-sys6.vercel.app"
+        ));
+
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
