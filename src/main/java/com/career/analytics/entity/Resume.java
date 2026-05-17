@@ -112,6 +112,19 @@ public class Resume {
             certification.setResume(this);
         }
     }
+    public void addAward(Award award) {
+        this.awards.add(award);
+        if (award.getResume() != this) {
+            award.setResume(this); // 자식에게도 "네 아빠는 나야"라고 알려줌
+        }
+    }
+    // Resume.java의 연관 관계 편의 메서드 구역에 추가
+    public void addLanguage(Language language) {
+        this.languages.add(language);
+        if (language.getResume() != this) {
+            language.setResume(this);
+        }
+    }
 
     // ========== 비즈니스 로직 (Business Logic) ==========
 

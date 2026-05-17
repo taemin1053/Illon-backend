@@ -1,12 +1,8 @@
 package com.career.analytics.dto;
 
-import com.career.analytics.entity.CareerLevel;
-import com.career.analytics.entity.Gender;
 import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.time.LocalDate;
 
 @Getter
 @Setter
@@ -20,24 +16,12 @@ public class SignupRequestDto {
     @Size(min = 8, message = "비밀번호는 최소 8자 이상이어야 합니다.")
     private String password;
 
-    /*
-    @NotBlank(message = "이름은 필수입니다.")
-    @Size(min = 2, max = 5)
-    private String name;
-    //profile의 name으로 저장된다.
+    // 🔥 추가: 프론트엔드에서 넘겨주는 포트원 본인인증 성공 ID
+    @NotBlank(message = "본인인증은 필수입니다.")
+    private String verificationId;
 
-    private Gender gender;
-
-    private LocalDate birthDay;
-
-    @Size(max = 1000, message = "자기소개를 1000자 이내로 작성해주세요")
-    private String bio;
-
-    @Pattern(regexp = "^\\d{10,11}$", message = "전화번호는 하이픈(-) 없이 숫자만 10~11자리로 입력해주세요.")
-    private String phone;
-
-    private String profileImageUrl;
-    @NotNull(message = "경력 수준(신입/경력)을 선택해주세요.")
-    private CareerLevel careerLevel;*/
-
+    /* 이름, 성별, 생년월일, 전화번호 등은
+       프론트에서 받지 않고 verificationId를 통해
+       백엔드에서 포트원 API로 직접 조회하여 저장합니다.
+    */
 }

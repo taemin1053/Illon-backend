@@ -52,10 +52,10 @@ public class Profile {
     @Column(name = "profile_image_url", length = 500)
     private String profileImageUrl;
 
+    @Builder.Default // 빌더 패턴을 사용한다면 필수
     @Enumerated(EnumType.STRING)
-    @Column(name = "career_level", length = 20)
-    private CareerLevel careerLevel;
-
+    @Column(name = "career_level", nullable = false)
+    private CareerLevel careerLevel = CareerLevel.NEWCOMER;
 
     //profile 생성자
     public static Profile createProfile(Users user, String name, Gender gender,
@@ -104,6 +104,10 @@ public class Profile {
         return Profile.builder()
                 .user(user)
                 .build();
+    }
+    public void updateVerificationInfo(String name, String phone) {
+        this.name = name;
+        this.phone = phone;
     }
 
 }

@@ -64,6 +64,8 @@ public class Users {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Resume> resumes = new ArrayList<>();
 
+    @Column(nullable = true, unique = true)
+    private String ci;
     //스크랩
     @Builder.Default
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -71,5 +73,9 @@ public class Users {
     // Users.java 파일 내부에 추가
     public void setProfile(Profile profile) {
         this.profile = profile;
+    }
+    // Users.java (예시)
+    public void updateCi(String ci) {
+        this.ci = ci;
     }
 }
