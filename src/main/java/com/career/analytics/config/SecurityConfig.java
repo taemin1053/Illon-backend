@@ -85,6 +85,7 @@ public class SecurityConfig {
                                 "/error",
                                 "/"
                         ).permitAll()
+                        .requestMatchers("/api/jobs/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2
@@ -100,6 +101,11 @@ public class SecurityConfig {
 
         http.authenticationProvider(authenticationProvider());
         http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+//  FilterChain 설정 내부 고도화
+        http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+
+// [Tarpit 필터 추가] 시큐리티가 패킷을 가로채기 가장 최앞단에 봇 차단 필터를 꽂아 넣습니다.
+        http.addFilterBefore(new com.career.analytics.security.MaliciousBotTarpitFilter(), org.springframework.web.filter.CorsFilter.class);
 
         return http.build();
     }
@@ -133,5 +139,7 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
+
     }
+
 }

@@ -69,7 +69,8 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         String targetUrl = UriComponentsBuilder.fromUriString(redirectUri)
                 .queryParam("token", accessToken)
                 .queryParam("refreshToken", refreshToken)
-                .queryParam("isNewUser", isNewUser) // 👈 이제 이게 보일 겁니다.
+                .queryParam("isNewUser", isNewUser)
+                .queryParam("isSurveyCompleted", user.isSurveyCompleted())
                 .build().toUriString();
 
         getRedirectStrategy().sendRedirect(request, response, targetUrl);

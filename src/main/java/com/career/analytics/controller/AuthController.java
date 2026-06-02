@@ -4,8 +4,6 @@ import com.career.analytics.dto.*;
 import com.career.analytics.security.UserDetailsImpl;
 import com.career.analytics.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.Valid;
@@ -35,53 +33,38 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
-    /*
-    @Operation(
-            summary = "간편 회원가입 및 로그인",
-            description = "포트원 본인인증 ID만으로 가입 또는 로그인을 진행합니다.",
-            responses = {
-                    @ApiResponse(responseCode = "200", description = "성공",
-                            content = @Content(schema = @Schema(implementation = TokenResponseDto.class)))
-            }
-    )
 
-    @PostMapping("/signup/simple")
-    public ResponseEntity<TokenResponseDto> simpleSignup(
-            @Valid @RequestBody SimpleSignupRequestDto request // 🔥 Map 대신 DTO 적용
-    ) {
-        TokenResponseDto tokenResponse = authService.simpleSignupAndLogin(request.verificationId());
+    @Operation(summary = "이메일 회원가입", description = "본인인증 ID와 이메일, 비밀번호를 받아 회원가입을 진행하고 즉시 토큰을 발급합니다.")
+    @ApiResponse(responseCode = "201", description = "회원가입 및 토큰 발급 성공")
+    @PostMapping("/signup/email")
+    public ResponseEntity<TokenResponseDto> emailSignup(@Valid @RequestBody SignupRequestDto signupDto) {
+        // TokenResponseDto를 받도록 수정되었습니다.
+        TokenResponseDto response = authService.emailSignup(signupDto, signupDto.getVerificationId());
 
+        // 로그인과 동일하게 쿠키 설정 (보안 정책 통일)
         long sevenDaysInSeconds = 7 * 24 * 60 * 60;
-        ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", tokenResponse.getRefreshToken())
+        ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", response.getRefreshToken())
                 .httpOnly(true)
                 .secure(true)
                 .path("/api/auth/refresh")
                 .maxAge(sevenDaysInSeconds)
                 .build();
 
-        return ResponseEntity.ok()
+        return ResponseEntity.status(HttpStatus.CREATED)
                 .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
-                .body(tokenResponse);
-    }
-    */
-    @Operation(summary = "이메일 회원가입", description = "본인인증 ID와 이메일, 비밀번호를 받아 회원가입을 진행합니다.")
-    @PostMapping("/signup/email")
-    public ResponseEntity<SignupResponseDto> emailSignup(@Valid @RequestBody SignupRequestDto signupDto) {
-        SignupResponseDto response = authService.emailSignup(signupDto, signupDto.getVerificationId());
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+                .body(response);
     }
 
+    @Operation(summary = "로그인", description = "이메일과 비밀번호로 로그인하여 토큰을 발급받습니다.")
     @PostMapping("/login")
     public ResponseEntity<TokenResponseDto> login(@Valid @RequestBody LoginRequestDto loginDto) {
         TokenResponseDto tokenResponse = authService.login(loginDto);
 
-        //토큰 7일
         long sevenDaysInSeconds = 7 * 24 * 60 * 60;
-
         ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", tokenResponse.getRefreshToken())
                 .httpOnly(true)
-                .secure(true) // https 환경에서만 전송
-                .path("/api/auth/refresh") // 토큰 재발급 API에서만 쿠키가 전송되도록 보안 강화
+                .secure(true)
+                .path("/api/auth/refresh")
                 .maxAge(sevenDaysInSeconds)
                 .build();
 
@@ -127,7 +110,6 @@ public class AuthController {
         return ResponseEntity.ok(tokenResponse);
     }
 
-    // 신규 추가: 소셜 로그인 후 본인인증(CI) 계정 통합 API
     @Operation(
             summary = "소셜 계정 본인인증 및 통합",
             description = "소셜 로그인 직후 발급받은 임시 토큰(Header)과 본인인증 ID(Body)를 받아 기존 계정과 통합하거나 정식 회원으로 승격시킵니다."
@@ -146,10 +128,8 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        // 서비스 로직 호출 및 새로운 통합 토큰 반환
         TokenResponseDto tokenResponse = authService.integrateSocialAccount(userDetails.getId(), verificationId);
 
-        // 보안 정책 일관성 유지: 여기서도 리프레시 토큰을 HttpOnly 쿠키로 세팅해서 내려줍니다.
         long sevenDaysInSeconds = 7 * 24 * 60 * 60;
         ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", tokenResponse.getRefreshToken())
                 .httpOnly(true)

@@ -70,12 +70,30 @@ public class Users {
     @Builder.Default
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ScrapedJob> scrapedJobs = new ArrayList<>();
-    // Users.java 파일 내부에 추가
+
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean isSurveyCompleted = false; //기본값 설문 조사 안함
+
+
     public void setProfile(Profile profile) {
         this.profile = profile;
     }
-    // Users.java (예시)
+    // Users.java
     public void updateCi(String ci) {
         this.ci = ci;
+    }
+    // Users.java 하단에 추가
+    public void updatePassword(String password) {
+        this.password = password;
+    }
+
+    public void updateEmail(String email) {
+        this.email = email;
+    }
+
+    //설문 조사 완료 처리 메서드
+    public void completeSurvey(){
+        this.isSurveyCompleted = true;
     }
 }

@@ -27,7 +27,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
 
-        // ✨ [CORS 억까 방지] 브라우저가 날린 예비 요청(OPTIONS)은 토큰 검증 없이 즉시 패스시킵니다.
+        // CORS 억까 방지 브라우저가 날린 예비 요청(OPTIONS)은 토큰 검증 없이 즉시 패스시킵니다.
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
             filterChain.doFilter(request, response);
             return;

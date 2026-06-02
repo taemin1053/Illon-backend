@@ -14,13 +14,14 @@ public class TokenResponseDto {
     private final String email;
     private final String name; // profile의 name
     private final String role;
-
-    public TokenResponseDto(String accessToken,String refreshToken, Long userId, String email, String name, String role) {
+    private final boolean isSurveyCompleted;
+    public TokenResponseDto(String accessToken,String refreshToken, Long userId, String email, String name, String role, boolean isSurveyCompleted) {
         this.accessToken = accessToken;
         this.refreshToken = refreshToken;
         this.userId = userId;
         this.email = email;
         this.name = name;
         this.role = role;
+        this.isSurveyCompleted = isSurveyCompleted;
     }
 }
