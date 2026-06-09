@@ -41,3 +41,13 @@ application-*.properties
 application.yml
 application-*.yml
 .DS_Store
+
+# =========================================================================
+# Antigravity (Google AI Agent IDE) Configuration
+# =========================================================================
+.antigravity/
+.antigravity-cache/
+.scratch/
+.antigravity/artifacts/
+*.antigravity.log
+.antigravity_tmp/
