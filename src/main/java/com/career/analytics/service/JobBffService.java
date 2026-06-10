@@ -3,6 +3,7 @@ package com.career.analytics.service;
 import com.career.analytics.dto.JobDetailResponseDto;
 import com.career.analytics.dto.JobListResponseDto;
 import com.career.analytics.dto.JobSummaryResponseDto;
+import com.career.analytics.dto.KakaoAddressResponseDto; // 💡 카카오 DTO 임포트
 import com.career.analytics.exception.JobNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +21,7 @@ import java.util.List;
 public class JobBffService {
 
     private final RestClient aiServerRestClient;
+    private final KakaoAddressService kakaoAddressService; // 💡 1. 카카오 주소 API 서비스 주입
 
     /**
      * 💡 AI 서버의 원본 응답을 받기 위한 내부 전용 DTO (Record)
@@ -119,13 +121,27 @@ public class JobBffService {
 
         if (raw == null) throw new JobNotFoundException(jobId);
 
-        // 2. 여기서 수동으로 카멜케이스 DTO로 변환하여 반환
+        // 2. 카카오 Local API를 통한 텍스트 주소 -> 위도, 경도 좌표 변환
+        String lat = "37.5665"; // 기본값 (서울시청 위도)
+        String lng = "126.9780"; // 기본값 (서울시청 경도)
+        try {
+            if (raw.location() != null && !raw.location().isBlank()) {
+                KakaoAddressResponseDto.DocumentDto coordinate = kakaoAddressService.getCoordinate(raw.location());
+                lat = coordinate.y(); // 위도
+                lng = coordinate.x(); // 경도
+            }
+        } catch (Exception e) {
+            log.warn("⚠️ 공고 주소 좌표 변환 실패. 기본 좌표를 사용합니다. 주소: {}, 에러: {}", raw.location(), e.getMessage());
+        }
+
+        // 3. 위도, 경도 정보가 포함된 DTO로 변환하여 반환
         return new JobDetailResponseDto(
                 raw.id(), raw.title(), raw.company(), raw.location(),
                 raw.job_type(), raw.occupation(), raw.career_type(), raw.education(),
                 raw.salary(), raw.description(), raw.requirements(), raw.preferred(),
                 raw.benefits(), raw.process(), raw.deadline(), raw.source(),
-                raw.url(), raw.view_count(), raw.created_at()
+                raw.url(), raw.view_count(), raw.created_at(),
+                lat, lng // 💡 위도, 경도 매핑 추가
         );
     }
 

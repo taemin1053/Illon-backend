@@ -19,5 +19,7 @@ public record JobDetailResponseDto(
         String source,
         String url,
         int viewCount,       // 카멜케이스 변환
-        String createdAt     // 카멜케이스 변환
+        String createdAt,    // 카멜케이스 변환
+        String lat,          // 💡 추가: 위도 (Kakao API y값)
+        String lng           // 💡 추가: 경도 (Kakao API x값)
 ) {}
