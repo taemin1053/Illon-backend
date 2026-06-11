@@ -3,8 +3,13 @@ package com.career.analytics.service;
 import com.career.analytics.dto.JobDetailResponseDto;
 import com.career.analytics.dto.JobListResponseDto;
 import com.career.analytics.dto.JobSummaryResponseDto;
-import com.career.analytics.dto.KakaoAddressResponseDto; // 💡 카카오 DTO 임포트
+import com.career.analytics.dto.KakaoAddressResponseDto;
+import com.career.analytics.dto.RecommendationResponseDto; // 💡 추천 DTO 임포트
+import com.career.analytics.entity.ScrapedJob;
+import com.career.analytics.entity.Users;
 import com.career.analytics.exception.JobNotFoundException;
+import com.career.analytics.repository.ScrapJobRepository; // 💡 레포지토리 임포트
+import com.career.analytics.repository.UserRepository;     // 💡 레포지토리 임포트
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
@@ -14,6 +19,8 @@ import org.springframework.web.client.RestClient;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -21,7 +28,9 @@ import java.util.List;
 public class JobBffService {
 
     private final RestClient aiServerRestClient;
-    private final KakaoAddressService kakaoAddressService; // 💡 1. 카카오 주소 API 서비스 주입
+    private final KakaoAddressService kakaoAddressService;
+    private final UserRepository userRepository;         // 💡 주입 추가
+    private final ScrapJobRepository scrapJobRepository; // 💡 주입 추가
 
     /**
      * 💡 AI 서버의 원본 응답을 받기 위한 내부 전용 DTO (Record)
@@ -200,5 +209,66 @@ public class JobBffService {
             log.error("지역별 공고 검색 중 치명적 오류 발생: {}", e.getMessage());
             throw new RuntimeException("공고 검색에 실패했습니다. 잠시 후 다시 시도해주세요.");
         }
+    }
+
+    /**
+     * 💡 AI 서버의 원본 추천 응답을 받기 위한 내부 전용 DTO (Record)
+     */
+    private record RawRecommendationData(
+            String id,
+            String title,
+            String company,
+            String location,
+            String job_type,
+            String career_type,
+            String education,
+            String salary,
+            String deadline,
+            int view_count,
+            String created_at
+    ) {}
+
+    /**
+     * 설문 기반 맞춤 추천 공고 조회 (4개 제한 및 스크랩 연동)
+     * 
+     * @param userId 로그인한 사용자의 고유 ID
+     * @return 스크랩 여부가 매핑된 상위 4개의 추천 공고 리스트
+     */
+    public List<RecommendationResponseDto> getRecommendedJobs(Long userId) {
+        log.info("🚀 [BFF] AI 서버로부터 맞춤 추천 공고 데이터를 조회합니다. 유저 ID: {}", userId);
+
+        // 1. 로그인 유저 엔티티 조회
+        Users user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다. ID: " + userId));
+
+        // 2. N+1 문제 방지를 위해 유저가 스크랩한 공고의 ID들을 한 번에 메모리(Set)로 가져옴
+        List<ScrapedJob> scrapedJobs = scrapJobRepository.findByUserOrderByCreatedAtDesc(user);
+        Set<String> scrapedJobIds = scrapedJobs.stream()
+                .map(ScrapedJob::getJobId)
+                .collect(Collectors.toSet());
+
+        // 3. AI 추천 서버 호출 (userId는 String 타입으로 형변환하여 전달)
+        List<RawRecommendationData> rawRecommendations = aiServerRestClient.get()
+                .uri("/api/v1/recommendations/{user_id}/general", String.valueOf(userId))
+                .retrieve()
+                .body(new ParameterizedTypeReference<List<RawRecommendationData>>() {});
+
+        // 4. 방어 로직: AI 서버 응답이 없는 경우 빈 리스트 반환
+        if (rawRecommendations == null || rawRecommendations.isEmpty()) {
+            return List.of();
+        }
+
+        // 5. 상위 4개 추출 및 스크랩 여부 매핑 후 DTO 변환
+        return rawRecommendations.stream()
+                .limit(4) // 4개 제한 요구사항 반영
+                .map(raw -> new RecommendationResponseDto(
+                        raw.id(),
+                        raw.title(),
+                        raw.company(),
+                        raw.location(),
+                        raw.career_type(),
+                        scrapedJobIds.contains(raw.id()) // 메모리 Set 기반 스크랩 매핑
+                ))
+                .toList();
     }
 }

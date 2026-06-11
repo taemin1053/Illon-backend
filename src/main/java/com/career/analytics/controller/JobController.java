@@ -3,12 +3,15 @@ package com.career.analytics.controller;
 import com.career.analytics.dto.JobDetailResponseDto;
 import com.career.analytics.dto.JobListResponseDto;
 import com.career.analytics.dto.JobSummaryResponseDto;
+import com.career.analytics.dto.RecommendationResponseDto; // 💡 임포트 추가
+import com.career.analytics.security.UserDetailsImpl;       // 💡 임포트 추가
 import com.career.analytics.service.JobBffService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal; // 💡 임포트 추가
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,9 +25,8 @@ public class JobController {
 
     private final JobBffService jobBffService;
 
-
-     //[GET] 메인 홈 전체 공고 요약 리스트 (30개)
-     //프론트엔드 호출 URI: GET /api/jobs/main
+    //[GET] 메인 홈 전체 공고 요약 리스트 (30개)
+    //프론트엔드 호출 URI: GET /api/jobs/main
 
     @Operation(
             summary = "메인 홈 공고 요약 30개 조회 (캐싱 적용)",
@@ -63,12 +65,31 @@ public class JobController {
     )
     @GetMapping
     public ResponseEntity<JobListResponseDto> searchJobsByLocation(
-            @RequestParam("location") String location // 💡 여기에 ("location") 추가!
+            @RequestParam("location") String location
     ) {
         log.info("프론트엔드에서 지역 공고 검색 API를 호출했습니다. 지역: {}", location);
 
         JobListResponseDto response = jobBffService.searchJobsByLocation(location);
 
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * [GET] 설문 기반 맞춤 추천 공고 조회 (4개 제한 및 스크랩 정보 포함)
+     * 호출 URI: GET /api/jobs/recommendations
+     */
+    @Operation(
+            summary = "설문 기반 맞춤 추천 공고 4개 조회",
+            description = "인증된 사용자의 ID를 기반으로 AI 서버에서 맞춤 공고를 호출한 후 로컬 DB 스크랩 여부를 매핑하여 상위 4개를 반환합니다."
+    )
+    @GetMapping("/recommendations")
+    public ResponseEntity<List<RecommendationResponseDto>> getRecommendedJobs(
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        log.info("프론트엔드에서 설문 기반 맞춤 추천 공고 API를 호출했습니다. 유저 ID: {}", userDetails.getId());
+
+        List<RecommendationResponseDto> responses = jobBffService.getRecommendedJobs(userDetails.getId());
+
+        return ResponseEntity.ok(responses);
     }
 }
