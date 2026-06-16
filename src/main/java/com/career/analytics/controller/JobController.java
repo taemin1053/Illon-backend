@@ -75,20 +75,39 @@ public class JobController {
     }
 
     /**
-     * [GET] 설문 기반 맞춤 추천 공고 조회 (4개 제한 및 스크랩 정보 포함)
+     * [GET] 설문 기반 맞춤 추천 공고 조회 (5개 제한 및 스크랩 정보 포함) - 그리드 화면용
      * 호출 URI: GET /api/jobs/recommendations
      */
     @Operation(
-            summary = "설문 기반 맞춤 추천 공고 4개 조회",
-            description = "인증된 사용자의 ID를 기반으로 AI 서버에서 맞춤 공고를 호출한 후 로컬 DB 스크랩 여부를 매핑하여 상위 4개를 반환합니다."
+            summary = "설문 기반 맞춤 추천 공고 5개 조회 ",
+            description = "인증된 사용자의 ID를 기반으로 AI 서버에서 맞춤 공고를 호출한 후 로컬 DB 스크랩 여부를 매핑하여 상위 5개를 반환합니다."
     )
     @GetMapping("/recommendations")
-    public ResponseEntity<List<RecommendationResponseDto>> getRecommendedJobs(
+    public ResponseEntity<List<RecommendationResponseDto>> getRecommendedJobsForGrid(
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
-        log.info("프론트엔드에서 설문 기반 맞춤 추천 공고 API를 호출했습니다. 유저 ID: {}", userDetails.getId());
+        log.info("프론트엔드에서 그리드용 맞춤 추천 공고 API를 호출했습니다. 유저 ID: {}", userDetails.getId());
 
-        List<RecommendationResponseDto> responses = jobBffService.getRecommendedJobs(userDetails.getId());
+        List<RecommendationResponseDto> responses = jobBffService.getRecommendedJobsForGrid(userDetails.getId());
+
+        return ResponseEntity.ok(responses);
+    }
+
+    /**
+     * [GET] 설문 기반 맞춤 추천 공고 조회 (12개 제한 및 스크랩 정보 포함) - 캐러셀 화면용
+     * 호출 URI: GET /api/jobs/recommendations/survey
+     */
+    @Operation(
+            summary = "설문 기반 맞춤 추천 공고 12개 조회 ",
+            description = "인증된 사용자의 ID를 기반으로 AI 서버에서 맞춤 공고를 호출한 후 로컬 DB 스크랩 여부를 매핑하여 상위 12개를 반환합니다."
+    )
+    @GetMapping("/recommendations/survey")
+    public ResponseEntity<List<RecommendationResponseDto>> getRecommendedJobsForCarousel(
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        log.info("프론트엔드에서 캐러셀용 맞춤 추천 공고 API를 호출했습니다. 유저 ID: {}", userDetails.getId());
+
+        List<RecommendationResponseDto> responses = jobBffService.getRecommendedJobsForCarousel(userDetails.getId());
 
         return ResponseEntity.ok(responses);
     }

@@ -5,6 +5,7 @@ import com.career.analytics.dto.JobListResponseDto;
 import com.career.analytics.dto.JobSummaryResponseDto;
 import com.career.analytics.dto.KakaoAddressResponseDto;
 import com.career.analytics.dto.RecommendationResponseDto; // 💡 추천 DTO 임포트
+import com.career.analytics.dto.ScrapedJobResponseDto; // 💡 스크랩 응답 DTO 임포트
 import com.career.analytics.entity.ScrapedJob;
 import com.career.analytics.entity.Users;
 import com.career.analytics.exception.JobNotFoundException;
@@ -14,6 +15,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
@@ -214,28 +217,34 @@ public class JobBffService {
     /**
      * 💡 AI 서버의 원본 추천 응답을 받기 위한 내부 전용 DTO (Record)
      */
-    private record RawRecommendationData(
+    private record RawAiRecommendation(
             String id,
-            String title,
-            String company,
-            String location,
-            String job_type,
-            String career_type,
-            String education,
-            String salary,
-            String deadline,
-            int view_count,
+            String user_id,
+            String job_id,
             String created_at
     ) {}
 
     /**
-     * 설문 기반 맞춤 추천 공고 조회 (4개 제한 및 스크랩 연동)
-     * 
-     * @param userId 로그인한 사용자의 고유 ID
-     * @return 스크랩 여부가 매핑된 상위 4개의 추천 공고 리스트
+     * 그리드용 설문 기반 맞춤 추천 공고 조회 (5개)
+     * 호출 URI: GET /api/jobs/recommendations
      */
-    public List<RecommendationResponseDto> getRecommendedJobs(Long userId) {
-        log.info("🚀 [BFF] AI 서버로부터 맞춤 추천 공고 데이터를 조회합니다. 유저 ID: {}", userId);
+    public List<RecommendationResponseDto> getRecommendedJobsForGrid(Long userId) {
+        return getRecommendedJobs(userId, 5);
+    }
+
+    /**
+     * 캐러셀용 설문 기반 맞춤 추천 공고 조회 (12개)
+     * 호출 URI: GET /api/jobs/recommendations/survey
+     */
+    public List<RecommendationResponseDto> getRecommendedJobsForCarousel(Long userId) {
+        return getRecommendedJobs(userId, 12);
+    }
+
+    /**
+     * 💡 AI 서버 추천 호출 및 DTO 변환 공통 헬퍼 메서드
+     */
+    private List<RecommendationResponseDto> getRecommendedJobs(Long userId, int topK) {
+        log.info("🚀 [BFF] AI 서버로부터 맞춤 추천 공고 데이터를 조회합니다. 유저 ID: {}, top_k: {}", userId, topK);
 
         // 1. 로그인 유저 엔티티 조회
         Users user = userRepository.findById(userId)
@@ -247,28 +256,102 @@ public class JobBffService {
                 .map(ScrapedJob::getJobId)
                 .collect(Collectors.toSet());
 
-        // 3. AI 추천 서버 호출 (userId는 String 타입으로 형변환하여 전달)
-        List<RawRecommendationData> rawRecommendations = aiServerRestClient.get()
-                .uri("/api/v1/recommendations/{user_id}/general", String.valueOf(userId))
-                .retrieve()
-                .body(new ParameterizedTypeReference<List<RawRecommendationData>>() {});
+        // 3. AI 추천 서버 호출 (POST /api/v1/recommendations/{user_id}/general?top_k={topK})
+        List<RawAiRecommendation> rawRecommendations;
+        try {
+            rawRecommendations = aiServerRestClient.post()
+                    .uri("/api/v1/recommendations/{user_id}/general?top_k=" + topK, String.valueOf(userId))
+                    .retrieve()
+                    .body(new ParameterizedTypeReference<List<RawAiRecommendation>>() {});
+        } catch (Exception e) {
+            // 💡 예외 처리 방어막: 설문 미참여(422) 및 통신 장애 발생 시 500 에러를 내지 않고 조용히 빈 배열 반환
+            log.warn("⚠️ AI 추천 서버 호출 실패 (설문 미참여 또는 통신 에러). 유저 ID: {}, 에러: {}", userId, e.getMessage());
+            return List.of();
+        }
 
         // 4. 방어 로직: AI 서버 응답이 없는 경우 빈 리스트 반환
         if (rawRecommendations == null || rawRecommendations.isEmpty()) {
             return List.of();
         }
 
-        // 5. 상위 4개 추출 및 스크랩 여부 매핑 후 DTO 변환
-        return rawRecommendations.stream()
-                .limit(4) // 4개 제한 요구사항 반영
-                .map(raw -> new RecommendationResponseDto(
-                        raw.id(),
-                        raw.title(),
-                        raw.company(),
-                        raw.location(),
-                        raw.career_type(),
-                        scrapedJobIds.contains(raw.id()) // 메모리 Set 기반 스크랩 매핑
-                ))
-                .toList();
+        // 5. 추천된 job_id들을 순회하며 상세 정보를 조회하고 DTO 매핑
+        List<RecommendationResponseDto> recommendedJobs = new ArrayList<>();
+        for (RawAiRecommendation rec : rawRecommendations) {
+            String jobId = rec.job_id();
+            try {
+                // 외부 AI 서버 상세 조회 API 호출
+                RawJobDetail rawJob = aiServerRestClient.get()
+                        .uri("/api/v1/jobs/{job_id}", jobId)
+                        .retrieve()
+                        .onStatus(status -> status.value() == 404, (request, response) -> {
+                            log.warn("⚠️ AI 서버에 추천된 공고가 존재하지 않습니다. JobID: {}", jobId);
+                        })
+                        .body(RawJobDetail.class);
+
+                if (rawJob != null) {
+                    recommendedJobs.add(new RecommendationResponseDto(
+                            rawJob.id(),
+                            rawJob.title(),
+                            rawJob.company(),
+                            rawJob.location(),
+                            rawJob.career_type(),
+                            scrapedJobIds.contains(rawJob.id()) // 메모리 Set 기반 스크랩 여부 매핑
+                    ));
+                }
+            } catch (Exception e) {
+                // 개별 공고 상세조회 실패 시 전체 로직이 터지지 않도록 예외를 방어하고 다음 공고 진행
+                log.error("⚠️ 추천 공고 상세 정보 조회 중 오류 발생. JobID: {}, Error: {}", jobId, e.getMessage());
+            }
+        }
+
+        return recommendedJobs;
+    }
+
+    /**
+     * 유저의 스크랩 공고 목록 페이징 조회 및 외부 API 상세 정보 매핑
+     */
+    public Page<ScrapedJobResponseDto> getScrapedJobs(Long userId, Pageable pageable) {
+        // 1. 로그인 유저 조회
+        Users user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다. ID: " + userId));
+
+        // 2. 해당 유저가 스크랩한 내역 페이징 조회
+        Page<ScrapedJob> scrapedJobsPage = scrapJobRepository.findByUser(user, pageable);
+
+        // 3. Page 안의 ScrapedJob들을 순회하면서 외부 API 상세 정보(제목, 회사명 등)를 가져와 DTO로 변환
+        return scrapedJobsPage.map(scrapedJob -> {
+            String jobId = scrapedJob.getJobId();
+            try {
+                // 외부 AI 서버 상세 조회 API 호출
+                RawJobDetail raw = aiServerRestClient.get()
+                        .uri("/api/v1/jobs/{job_id}", jobId)
+                        .retrieve()
+                        .onStatus(status -> status.value() == 404, (request, response) -> {
+                            log.warn("⚠️ AI 서버에 해당 공고가 존재하지 않습니다. JobID: {}", jobId);
+                        })
+                        .body(RawJobDetail.class);
+
+                if (raw != null) {
+                    return new ScrapedJobResponseDto(
+                            raw.id(),
+                            raw.title(),
+                            raw.company(),
+                            raw.location(),
+                            raw.career_type()
+                    );
+                }
+            } catch (Exception e) {
+                log.error("⚠️ 외부 공고 API 호출 중 오류 발생. JobID: {}, Error: {}", jobId, e.getMessage());
+            }
+
+            // 외부 API 조회 실패 시 최소한의 식별 정보와 기본값을 담아 안전하게 반환
+            return new ScrapedJobResponseDto(
+                    jobId,
+                    "정보를 불러올 수 없는 공고입니다.",
+                    "알 수 없음",
+                    "알 수 없음",
+                    "알 수 없음"
+            );
+        });
     }
 }
