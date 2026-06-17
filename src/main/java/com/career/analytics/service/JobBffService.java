@@ -3,6 +3,7 @@ package com.career.analytics.service;
 import com.career.analytics.dto.JobDetailResponseDto;
 import com.career.analytics.dto.JobListResponseDto;
 import com.career.analytics.dto.JobSummaryResponseDto;
+import com.career.analytics.dto.JobSearchCondition;
 import com.career.analytics.dto.KakaoAddressResponseDto;
 import com.career.analytics.dto.RecommendationResponseDto; // 💡 추천 DTO 임포트
 import com.career.analytics.dto.ScrapedJobResponseDto; // 💡 스크랩 응답 DTO 임포트
@@ -165,31 +166,48 @@ public class JobBffService {
     ) {}
 
     /**
-     * 특정 지역 공고 검색 (지역 파라미터 기반 캐싱 적용)
+     * 공고 동적 검색 (검색 조건별 Caffeine 캐싱 적용)
      */
-    @Cacheable(value = "jobSearch", key = "#p0") // 💡 #p0는 파라미터의 첫 번째 인자(String location)를 명시적으로 가리킵니다.
-    public JobListResponseDto searchJobsByLocation(String location) {
-        log.info("🚀 [Real-time 또는 Cache-Miss] 지역별 공고 검색 API 실제 호출: location={}", location);
+    @Cacheable(value = "jobSearchDynamic", key = "#condition.toCacheKey()")
+    public JobListResponseDto searchJobs(JobSearchCondition condition) {
+        log.info("🚀 [Cache Miss] AI 서버로 공고 동적 검색을 요청합니다. 조건: {}", condition);
+
         try {
             AiPaginatedResponse aiResponse = aiServerRestClient.get()
-                    .uri(uriBuilder -> uriBuilder
-                            .path("/api/v1/jobs")
-                            .queryParam("location", location)
-                            .queryParam("size", 30)
-                            .build())
-                    .retrieve()
-                    // 💡 1. 404 예외 방어 (해당 지역에 공고가 아예 없는 경우)
-                    .onStatus(status -> status.value() == 404, (request, response) -> {
-                        log.warn("AI 서버에 해당 지역({})의 공고가 없습니다.", location);
+                    .uri(uriBuilder -> {
+                        uriBuilder.path("/api/v1/jobs");
+                        
+                        if (condition.getKeyword() != null && !condition.getKeyword().isBlank()) {
+                            uriBuilder.queryParam("keyword", condition.getKeyword());
+                        }
+                        if (condition.getLocation() != null && !condition.getLocation().isBlank()) {
+                            uriBuilder.queryParam("location", condition.getLocation());
+                        }
+                        if (condition.getJobCategory() != null && !condition.getJobCategory().isBlank()) {
+                            uriBuilder.queryParam("job_type", condition.getJobCategory());
+                        }
+                        if (condition.getCareer() != null && !condition.getCareer().isBlank()) {
+                            uriBuilder.queryParam("career_type", condition.getCareer());
+                        }
+                        if (condition.getEducation() != null && !condition.getEducation().isBlank()) {
+                            uriBuilder.queryParam("education", condition.getEducation());
+                        }
+                        // 💡 DTO의 안전한 Getter를 호출하여 삼항 연산자 제거
+                        uriBuilder.queryParam("page", condition.getPage());
+                        uriBuilder.queryParam("size", condition.getSize());
+                        
+                        return uriBuilder.build();
                     })
-                    // 💡 2. 500 예외 방어 (AI 서버 자체가 뻗은 경우)
+                    .retrieve()
+                    .onStatus(status -> status.value() == 404, (request, response) -> {
+                        log.warn("AI 서버에 검색 조건에 맞는 공고가 존재하지 않습니다.");
+                    })
                     .onStatus(status -> status.is5xxServerError(), (request, response) -> {
                         log.error("AI 서버 내부 장애 발생");
                         throw new RuntimeException("AI 서버 응답 지연으로 공고를 불러올 수 없습니다.");
                     })
                     .body(AiPaginatedResponse.class);
 
-            // 데이터가 아예 없거나 404로 인해 aiResponse가 정상 파싱되지 않은 경우 빈 배열 반환
             if (aiResponse == null || aiResponse.items() == null || aiResponse.items().isEmpty()) {
                 log.info("반환할 공고 데이터가 없어 빈 리스트를 반환합니다.");
                 return new JobListResponseDto(List.of());
@@ -208,8 +226,7 @@ public class JobBffService {
             return new JobListResponseDto(processedJobs);
 
         } catch (Exception e) {
-            // 💡 3. 타임아웃 등 예측 불가능한 통신 에러 최후 방어선
-            log.error("지역별 공고 검색 중 치명적 오류 발생: {}", e.getMessage());
+            log.error("공고 동적 검색 중 치명적 오류 발생: {}", e.getMessage());
             throw new RuntimeException("공고 검색에 실패했습니다. 잠시 후 다시 시도해주세요.");
         }
     }

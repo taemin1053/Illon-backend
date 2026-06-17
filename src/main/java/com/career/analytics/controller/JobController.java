@@ -2,6 +2,7 @@ package com.career.analytics.controller;
 
 import com.career.analytics.dto.JobDetailResponseDto;
 import com.career.analytics.dto.JobListResponseDto;
+import com.career.analytics.dto.JobSearchCondition;
 import com.career.analytics.dto.JobSummaryResponseDto;
 import com.career.analytics.dto.RecommendationResponseDto; // 💡 임포트 추가
 import com.career.analytics.security.UserDetailsImpl;       // 💡 임포트 추가
@@ -10,6 +11,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal; // 💡 임포트 추가
 import org.springframework.web.bind.annotation.*;
@@ -58,18 +60,21 @@ public class JobController {
         return ResponseEntity.ok(response);
     }
 
-    //GET /api/jobs?location=천안시
+    /**
+     * [GET] 공고 동적 검색 및 필터링 (BFF 라우팅)
+     * 호출 URI: GET /api/jobs
+     */
     @Operation(
-            summary = "특정 지역 공고 검색",
-            description = "지역(location) 이름으로 공고를 검색하여 화면에 표시할 공고 리스트 객체를 반환합니다."
+            summary = "공고 동적 검색 및 필터링 (캐싱 적용)",
+            description = "검색 조건(키워드, 지역, 경력, 직군, 학력 등)을 기반으로 AI 서버의 공고 데이터를 동적으로 검색하여 반환합니다."
     )
     @GetMapping
-    public ResponseEntity<JobListResponseDto> searchJobsByLocation(
-            @RequestParam("location") String location
+    public ResponseEntity<JobListResponseDto> searchJobs(
+            @ModelAttribute JobSearchCondition condition
     ) {
-        log.info("프론트엔드에서 지역 공고 검색 API를 호출했습니다. 지역: {}", location);
+        log.info("프론트엔드에서 공고 검색 API를 호출했습니다. 조건: {}", condition);
 
-        JobListResponseDto response = jobBffService.searchJobsByLocation(location);
+        JobListResponseDto response = jobBffService.searchJobs(condition);
 
         return ResponseEntity.ok(response);
     }
@@ -86,13 +91,16 @@ public class JobController {
     public ResponseEntity<List<RecommendationResponseDto>> getRecommendedJobsForGrid(
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
+        // 💡 안전장치: 인증 정보가 없는 경우 401 에러를 명시적으로 반환
+        if (userDetails == null) {
+            log.warn("인증되지 않은 사용자가 추천 공고 API를 호출했습니다.");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
         log.info("프론트엔드에서 그리드용 맞춤 추천 공고 API를 호출했습니다. 유저 ID: {}", userDetails.getId());
-
         List<RecommendationResponseDto> responses = jobBffService.getRecommendedJobsForGrid(userDetails.getId());
-
         return ResponseEntity.ok(responses);
     }
-
     /**
      * [GET] 설문 기반 맞춤 추천 공고 조회 (12개 제한 및 스크랩 정보 포함) - 캐러셀 화면용
      * 호출 URI: GET /api/jobs/recommendations/survey

@@ -27,7 +27,11 @@ public class CacheConfig {
         // 따라서 이 캐시 공간에는 객체가 딱 1개만 들어가면 되므로 사이즈를 1로 제한하여 메모리 낭비를 원천 차단
 
         //지역 검색 결과 캐싱( 10분 유지, 최대 100개 지역 보관 )
-        JOB_SEARCH("jobSearch", 10, TimeUnit.MINUTES, 100);
+        JOB_SEARCH("jobSearch", 10, TimeUnit.MINUTES, 100),
+
+        // 동적 필터링 검색 캐시 (10분 유지, 최대 500개 검색조건 조합 보관)
+        JOB_SEARCH_DYNAMIC("jobSearchDynamic", 10, TimeUnit.MINUTES, 500);
+
         private final String cacheName;
         private final long ttl;
         private final TimeUnit timeUnit;
