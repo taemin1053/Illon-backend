@@ -35,6 +35,7 @@ public class JobBffService {
     private final KakaoAddressService kakaoAddressService;
     private final UserRepository userRepository;         // 💡 주입 추가
     private final ScrapJobRepository scrapJobRepository; // 💡 주입 추가
+    private final JobDetailCacheService jobDetailCacheService; // 💡 캐시 서비스 주입 추가
 
     /**
      * 💡 AI 서버의 원본 응답을 받기 위한 내부 전용 DTO (Record)
@@ -335,30 +336,21 @@ public class JobBffService {
         // 2. 해당 유저가 스크랩한 내역 페이징 조회
         Page<ScrapedJob> scrapedJobsPage = scrapJobRepository.findByUser(user, pageable);
 
-        // 3. Page 안의 ScrapedJob들을 순회하면서 외부 API 상세 정보(제목, 회사명 등)를 가져와 DTO로 변환
+        // 3. Page 안의 ScrapedJob들을 순회하면서 캐싱된 외부 API 상세 정보를 가져와 DTO로 변환
         return scrapedJobsPage.map(scrapedJob -> {
             String jobId = scrapedJob.getJobId();
             try {
-                // 외부 AI 서버 상세 조회 API 호출
-                RawJobDetail raw = aiServerRestClient.get()
-                        .uri("/api/v1/jobs/{job_id}", jobId)
-                        .retrieve()
-                        .onStatus(status -> status.value() == 404, (request, response) -> {
-                            log.warn("⚠️ AI 서버에 해당 공고가 존재하지 않습니다. JobID: {}", jobId);
-                        })
-                        .body(RawJobDetail.class);
-
-                if (raw != null) {
-                    return new ScrapedJobResponseDto(
-                            raw.id(),
-                            raw.title(),
-                            raw.company(),
-                            raw.location(),
-                            raw.career_type()
-                    );
-                }
+                // 💡 캐시 전담 서비스를 거쳐 외부 호출 차단 및 속도 향상
+                JobDetailResponseDto cachedJob = jobDetailCacheService.getJobDetailCached(jobId);
+                return new ScrapedJobResponseDto(
+                        cachedJob.id(),
+                        cachedJob.title(),
+                        cachedJob.company(),
+                        cachedJob.location(),
+                        cachedJob.careerType()
+                );
             } catch (Exception e) {
-                log.error("⚠️ 외부 공고 API 호출 중 오류 발생. JobID: {}, Error: {}", jobId, e.getMessage());
+                log.error("⚠️ 캐시 공고 상세 조회 실패. JobID: {}, Error: {}", jobId, e.getMessage());
             }
 
             // 외부 API 조회 실패 시 최소한의 식별 정보와 기본값을 담아 안전하게 반환

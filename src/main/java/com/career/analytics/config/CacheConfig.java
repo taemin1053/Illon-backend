@@ -30,7 +30,10 @@ public class CacheConfig {
         JOB_SEARCH("jobSearch", 10, TimeUnit.MINUTES, 100),
 
         // 동적 필터링 검색 캐시 (10분 유지, 최대 500개 검색조건 조합 보관)
-        JOB_SEARCH_DYNAMIC("jobSearchDynamic", 10, TimeUnit.MINUTES, 500);
+        JOB_SEARCH_DYNAMIC("jobSearchDynamic", 10, TimeUnit.MINUTES, 500),
+
+        // 💡 특정 공고 상세 조회 캐시 (30분 유지, 최대 1000개 보관)
+        JOB_DETAIL("jobDetail", 30, TimeUnit.MINUTES, 1000);
 
         private final String cacheName;
         private final long ttl;

@@ -14,6 +14,8 @@ public class PortfolioResponseDto {
     private Long id;
     private Long resumeId;
     private String portfolioName;
+
+    @lombok.Setter
     private String url;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

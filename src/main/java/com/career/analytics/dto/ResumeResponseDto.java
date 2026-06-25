@@ -54,9 +54,10 @@ public class ResumeResponseDto {
                         .map(LanguageResponseDto::from)
                         .collect(Collectors.toList()))
 
-                .portfolios(resume.getPortfolios().stream()
-                        .map(PortfolioResponseDto::from)
-                        .collect(Collectors.toList()))
+                .portfolios(resume.getPortfolios() != null ?
+                        resume.getPortfolios().stream()
+                                .map(PortfolioResponseDto::from)
+                                .collect(Collectors.toList()) : java.util.Collections.emptyList())
                 .certifications(resume.getCertifications().stream()
                         .map(CertificationResponseDto::from)
                         .collect(Collectors.toList()))

@@ -19,10 +19,15 @@ public class ResumeService {
 
     private final ResumeRepository resumeRepository;
     private final UserRepository userRepository;
+    private final S3PresignedUrlService s3PresignedUrlService;
 
     public List<ResumeResponseDto> getMyResumes(Long userId) {
         return resumeRepository.findAllByUserId(userId).stream()
-                .map(ResumeResponseDto::from)
+                .map(resume -> {
+                    ResumeResponseDto responseDto = ResumeResponseDto.from(resume);
+                    convertPortfolioUrls(responseDto);
+                    return responseDto;
+                })
                 .collect(Collectors.toList());
     }
 
@@ -30,7 +35,24 @@ public class ResumeService {
         // ✨ IllegalArgumentException 대신 ResumeNotFoundException 사용 및 오타 방지
         Resume resume = resumeRepository.findByIdAndUserId(resumeId, userId)
                 .orElseThrow(() -> new ResumeNotFoundException(resumeId));
-        return ResumeResponseDto.from(resume);
+        ResumeResponseDto responseDto = ResumeResponseDto.from(resume);
+        convertPortfolioUrls(responseDto);
+        return responseDto;
+    }
+
+    private void convertPortfolioUrls(ResumeResponseDto responseDto) {
+        if (responseDto.getPortfolios() == null || responseDto.getPortfolios().isEmpty()) {
+            return;
+        }
+
+        responseDto.getPortfolios().forEach(portfolio -> {
+            String originalUrl = portfolio.getUrl();
+            if (originalUrl != null && !originalUrl.isBlank()) {
+                String objectKey = s3PresignedUrlService.extractKeyFromUrl(originalUrl);
+                String presignedUrl = s3PresignedUrlService.generatePresignedUrl(objectKey);
+                portfolio.setUrl(presignedUrl);
+            }
+        });
     }
 
     @Transactional

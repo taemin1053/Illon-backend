@@ -23,7 +23,6 @@ import org.springframework.http.HttpMethod;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-// ✨ OAuth2 리졸버 커스텀을 위한 스펙 추가
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
@@ -37,110 +36,104 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final CustomUserDetailsService userDetailsService;
-    private final JwtTokenProvider jwtTokenProvider;
-    private final CustomOAuth2UserService customOAuth2UserService;
-    private final OAuth2SuccessHandler oAuth2SuccessHandler;
+        private final CustomUserDetailsService userDetailsService;
+        private final JwtTokenProvider jwtTokenProvider;
+        private final CustomOAuth2UserService customOAuth2UserService;
+        private final OAuth2SuccessHandler oAuth2SuccessHandler;
+        private final ClientRegistrationRepository clientRegistrationRepository;
 
-    // ✨ [핵심 추가] OAuth2 인증 클라이언트 레포지토리 의존성 주입 받기
-    private final ClientRegistrationRepository clientRegistrationRepository;
+        @Bean
+        public JwtAuthenticationFilter jwtAuthenticationFilter() {
+                return new JwtAuthenticationFilter(jwtTokenProvider, userDetailsService);
+        }
 
-    @Bean
-    public JwtAuthenticationFilter jwtAuthenticationFilter() {
-        return new JwtAuthenticationFilter(jwtTokenProvider, userDetailsService);
-    }
+        @Bean
+        public PasswordEncoder passwordEncoder() {
+                return new BCryptPasswordEncoder();
+        }
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+        // 💡 [수정] @Bean을 떼어내고 private 헬퍼 메서드로 변경하여 스프링 자동 설정을 교란하지 않도록 조치
+        private DaoAuthenticationProvider authenticationProvider() {
+                DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+                authProvider.setUserDetailsService(userDetailsService);
+                authProvider.setPasswordEncoder(passwordEncoder());
+                return authProvider;
+        }
 
-    @Bean
-    public DaoAuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setUserDetailsService(userDetailsService);
-        authProvider.setPasswordEncoder(passwordEncoder());
-        return authProvider;
-    }
+        @Bean
+        public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
+                return authConfig.getAuthenticationManager();
+        }
 
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
-        return authConfig.getAuthenticationManager();
-    }
+        @Bean
+        public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+                http
+                                .csrf(csrf -> csrf.disable())
+                                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                                .sessionManagement(session -> session
+                                                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                                .authorizeHttpRequests(auth -> auth
+                                                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                                                .requestMatchers("/api/auth/**").permitAll()
+                                                .requestMatchers("/login/oauth2/code/**", "/oauth2/**").permitAll()
+                                                .requestMatchers(
+                                                                "/v3/api-docs/**",
+                                                                "/swagger-ui/**",
+                                                                "/swagger-ui.html",
+                                                                "/swagger/**",
+                                                                "/error",
+                                                                "/")
+                                                .permitAll()
+                                                .requestMatchers("/api/jobs/**").permitAll()
+                                                .anyRequest().authenticated())
+                                .oauth2Login(oauth2 -> oauth2
+                                                .authorizationEndpoint(authorization -> authorization
+                                                                .authorizationRequestResolver(
+                                                                                authorizationRequestResolver(
+                                                                                                clientRegistrationRepository)))
+                                                .userInfoEndpoint(userInfo -> userInfo
+                                                                .userService(customOAuth2UserService))
+                                                .successHandler(oAuth2SuccessHandler));
 
-    @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-                .csrf(csrf -> csrf.disable())
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/login/oauth2/code/**", "/oauth2/**").permitAll()
-                        .requestMatchers(
-                                "/v3/api-docs/**",
-                                "/swagger-ui/**",
-                                "/swagger-ui.html",
-                                "/swagger/**",
-                                "/error",
-                                "/"
-                        ).permitAll()
-                        .requestMatchers("/api/jobs/**").permitAll()
-                        .anyRequest().authenticated()
-                )
-                .oauth2Login(oauth2 -> oauth2
-                        // ✨ [핵심 추가] 인가 요청 엔드포인트에 커스텀 리졸버 빌더 바인딩
-                        .authorizationEndpoint(authorization -> authorization
-                                .authorizationRequestResolver(authorizationRequestResolver(clientRegistrationRepository))
-                        )
-                        .userInfoEndpoint(userInfo -> userInfo
-                                .userService(customOAuth2UserService)
-                        )
-                        .successHandler(oAuth2SuccessHandler)
-                );
+                // 💡 [동작] filterChain 내부로 직접 인스턴스화된 provider를 주입
+                http.authenticationProvider(authenticationProvider());
+                
+                // 💡 [수정] 중복해서 2번 등록되어 있던 필터 라인을 1개로 깔끔하게 통합
+                http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 
-        http.authenticationProvider(authenticationProvider());
-        http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
-//  FilterChain 설정 내부 고도화
-        http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+                // [Tarpit 필터 추가] 시큐리티가 패킷을 가로채기 가장 최앞단에 봇 차단 필터를 꽂아 넣습니다.
+                http.addFilterBefore(new com.career.analytics.security.MaliciousBotTarpitFilter(),
+                                org.springframework.web.filter.CorsFilter.class);
 
-// [Tarpit 필터 추가] 시큐리티가 패킷을 가로채기 가장 최앞단에 봇 차단 필터를 꽂아 넣습니다.
-        http.addFilterBefore(new com.career.analytics.security.MaliciousBotTarpitFilter(), org.springframework.web.filter.CorsFilter.class);
+                return http.build();
+        }
 
-        return http.build();
-    }
+        private OAuth2AuthorizationRequestResolver authorizationRequestResolver(
+                        ClientRegistrationRepository clientRegistrationRepository) {
+                DefaultOAuth2AuthorizationRequestResolver resolver = new DefaultOAuth2AuthorizationRequestResolver(
+                                clientRegistrationRepository, "/oauth2/authorization");
 
-    //  소셜 플랫폼으로 나가는 리다이렉트 URI 파라미터에 prompt=select_account 강제 이식기
-    private OAuth2AuthorizationRequestResolver authorizationRequestResolver(ClientRegistrationRepository clientRegistrationRepository) {
-        DefaultOAuth2AuthorizationRequestResolver resolver =
-                new DefaultOAuth2AuthorizationRequestResolver(clientRegistrationRepository, "/oauth2/authorization");
+                resolver.setAuthorizationRequestCustomizer(builder -> builder
+                                .additionalParameters(params -> params.put("prompt", "select_account")));
 
-        resolver.setAuthorizationRequestCustomizer(builder ->
-                builder.additionalParameters(params -> params.put("prompt", "select_account"))
-        );
+                return resolver;
+        }
 
-        return resolver;
-    }
+        @Bean
+        public CorsConfigurationSource corsConfigurationSource() {
+                CorsConfiguration configuration = new CorsConfiguration();
 
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
+                configuration.setAllowedOrigins(List.of(
+                                "http://localhost:3000",
+                                "https://illo-on-sys6.vercel.app"));
 
-        configuration.setAllowedOrigins(List.of(
-                "http://localhost:3000",
-                "https://illo-on-sys6.vercel.app"
-        ));
+                configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+                configuration.setAllowedHeaders(List.of("*"));
+                configuration.setAllowCredentials(true);
+                configuration.setExposedHeaders(List.of("Authorization"));
 
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(true);
-        configuration.setExposedHeaders(List.of("Authorization"));
-
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
-
-    }
-
+                UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+                source.registerCorsConfiguration("/**", configuration);
+                return source;
+        }
 }

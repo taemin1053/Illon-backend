@@ -1,47 +1,47 @@
 package com.career.analytics.service;
 
-import com.career.analytics.entity.ScrapedJob;
-import com.career.analytics.entity.Users;
-import com.career.analytics.repository.ScrapJobRepository;
-import com.career.analytics.repository.UserRepository;
+import com.career.analytics.dto.JobDetailResponseDto;
+import com.career.analytics.dto.ScrapStatusResponseDto;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
-
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ScrapedJobService {
 
-    private final ScrapJobRepository scrapJobRepository;
-    private final UserRepository userRepository; // 💡 실제 Users 엔티티 조회를 위해 UserRepository 추가
+    private final ScrapedJobCommandService commandService; // 💡 DB 트랜잭션 전담 서비스 주입
+    private final JobBffService jobBffService;             // 💡 외부 API 전담 서비스 주입
 
     /**
-     * 채용 공고 스크랩 토글 (등록 및 삭제)
-     * 
-     * @param userId 현재 로그인한 유저의 고유 식별자(PK)
-     * @param jobId  채용 공고 식별자
-     * @return 스크랩 상태 결과값 ("SCRAP_CREATED" 또는 "SCRAP_DELETED")
+     * 채용 공고 스크랩 토글 (네트워크 I/O를 트랜잭션 바깥으로 완벽 격리)
      */
-    @Transactional
     public String toggleScrap(Long userId, String jobId) {
-        // 1. 유저 ID로 실제 DB에서 Users 엔티티 조회
-        Users user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다. ID: " + userId));
+        log.info("🚪 [Facade] 스크랩 토글 비즈니스 흐름 시작 - 유저 ID: {}, 공고 ID: {}", userId, jobId);
 
-        // 2. 이미 스크랩한 공고인지 확인
-        Optional<ScrapedJob> existingScrap = scrapJobRepository.findByUserAndJobId(user, jobId);
-
-        if (existingScrap.isPresent()) {
-            // 3. 이미 존재한다면 삭제 (스크랩 취소)
-            scrapJobRepository.delete(existingScrap.get());
+        // 1단계 & 2단계: 기존 스크랩이 존재하면 삭제 후 즉시 커밋 및 트랜잭션 종료
+        boolean isDeleted = commandService.deleteIfExists(userId, jobId);
+        if (isDeleted) {
+            log.info("🗑️ [Facade] 기존 스크랩 감지 및 삭제 완료");
             return "SCRAP_DELETED";
-        } else {
-            // 4. 존재하지 않는다면 정적 팩토리 메서드를 통해 새로 생성 후 저장 (스크랩 등록)
-            ScrapedJob scrapedJob = ScrapedJob.createScrap(user, jobId);
-            scrapJobRepository.save(scrapedJob);
-            return "SCRAP_CREATED";
         }
+
+        // 3단계: 존재하지 않는 경우 외부 API 호출 (🚨 DB Connection을 잡고 있지 않은 상태)
+        log.info("🌐 [Facade] 외부 API 호출 진행 (트랜잭션 외부) - 공고 ID: {}", jobId);
+        JobDetailResponseDto jobDetail = jobBffService.getJobDetail(jobId);
+
+        // 4단계: 받아온 정보를 기반으로 새로운 트랜잭션을 획득하여 저장 진행
+        log.info("💾 [Facade] 신규 스크랩 정보 영속화 진행");
+        commandService.saveScrap(userId, jobId, jobDetail.deadline(), jobDetail.createdAt());
+
+        return "SCRAP_CREATED";
+    }
+
+    /**
+     * 대시보드용 오늘의 스크랩 현황 집계 위임
+     */
+    public ScrapStatusResponseDto getScrapStatus(Long userId) {
+        return commandService.getScrapStatus(userId);
     }
 }

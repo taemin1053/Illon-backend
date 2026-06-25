@@ -216,4 +216,40 @@ public class GlobalExceptionHandler {
                 .build();
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
+
+    // 17. AI 분석 요청 포맷 오류 예외 처리
+    @ExceptionHandler(AiAnalysisRequestException.class)
+    public ResponseEntity<ErrorResponse> handleAiAnalysisRequest(AiAnalysisRequestException ex) {
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Bad Request (AI)")
+                .message(ex.getMessage())
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    // 18. AI 서버 장애 및 통신 오류 예외 처리
+    @ExceptionHandler(AiServerException.class)
+    public ResponseEntity<ErrorResponse> handleAiServer(AiServerException ex) {
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.BAD_GATEWAY.value())
+                .error("Bad Gateway (AI)")
+                .message(ex.getMessage())
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(error);
+    }
+
+    // 19. 파일 유효성 검증 실패 예외 처리
+    @ExceptionHandler(InvalidFileException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidFile(InvalidFileException ex) {
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Invalid File")
+                .message(ex.getMessage())
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
 }
