@@ -42,6 +42,27 @@ application.yml
 application-*.yml
 .DS_Store
 
+# Environment variables
+.env
+.env.*
+*.env
+
+# Security Keys & Credentials
+*.pem
+*.key
+*.pub
+*.jks
+*.p12
+
+# Logs
+*.log
+logs/
+
+# OS Specific
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
 # =========================================================================
 # Antigravity (Google AI Agent IDE) Configuration
 # =========================================================================

@@ -18,3 +18,10 @@ out/
 target/
 bin/
 .git/
+
+# 3. 추가 보안 자격 증명 차단 (NPE 및 보안 강화)
+*.key
+*.pub
+*.jks
+*.p12
+logs/
