@@ -5,7 +5,7 @@ public class CertificationNotFoundException extends RuntimeException {
         super(message);
     }
     public CertificationNotFoundException(Long certificationId) {
-        super("자격증 정보를 찾을 . 없습니다. ID : " + certificationId);
+        super("자격증 정보를 찾을 수 없습니다. ID : " + certificationId);
     }
     public CertificationNotFoundException(String message, Throwable cause) {
         super(message, cause);

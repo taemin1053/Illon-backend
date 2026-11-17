@@ -11,21 +11,28 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.util.StringUtils;
-import org.springframework.web.filter.OncePerRequestFilter; // 1. 상속용 클래스 부활
+import org.springframework.web.filter.OncePerRequestFilter;
 
-import java.io.IOException; // 2. 근본 자바 IOException으로 교체 완료
+import java.io.IOException;
 
 @Slf4j
 @RequiredArgsConstructor
-public class JwtAuthenticationFilter extends OncePerRequestFilter { // 3. 부모 클래스 상속 복구!
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private final JwtTokenProvider tokenProvider; // 4. 변수명 tokenProvider로 통일
+    private final JwtTokenProvider tokenProvider;
     private final CustomUserDetailsService customUserDetailsService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
+
+        // CORS 억까 방지 브라우저가 날린 예비 요청(OPTIONS)은 토큰 검증 없이 즉시 패스시킵니다.
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         try {
             String jwt = getJwtFromRequest(request);
 

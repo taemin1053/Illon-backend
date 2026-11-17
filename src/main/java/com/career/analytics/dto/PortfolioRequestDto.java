@@ -1,5 +1,7 @@
 package com.career.analytics.dto;
 
+import com.career.analytics.entity.Portfolio;
+import com.career.analytics.entity.Resume;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
@@ -22,4 +24,11 @@ public class PortfolioRequestDto {
     )
     private String url;
 
+    public Portfolio toEntity(Resume resume) {
+        return Portfolio.builder()
+                .resume(resume) // 부모 참조 설정
+                .portfolioName(this.portfolioName)
+                .url(this.url)
+                .build();
+    }
 }

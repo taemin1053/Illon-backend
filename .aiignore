@@ -1,0 +1,27 @@
+# =========================================================================
+# Antigravity Context Exclusion Rules (.aiignore)
+# =========================================================================
+# 1. 환경 변수 및 보안 자격 증명 파일 은폐 (보안 유출 원천 차단)
+.env
+.env.local
+.env.development
+.env.production
+**/application-*.yml
+**/application-*.properties
+*.pem
+*.json
+
+# 2. 대규모 의존성 및 빌드 파일 제외 (AI 토큰 소모 및 속도 저하 방지)
+.gradle/
+build/
+out/
+target/
+bin/
+.git/
+
+# 3. 추가 보안 자격 증명 차단 (NPE 및 보안 강화)
+*.key
+*.pub
+*.jks
+*.p12
+logs/

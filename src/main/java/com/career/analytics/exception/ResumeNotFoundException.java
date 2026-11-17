@@ -12,6 +12,6 @@ public class ResumeNotFoundException extends RuntimeException {
         super(cause);
     }
     public ResumeNotFoundException(Long resumeId) {
-        super("해당 이력서를 찾을 . 없습니다. Resume ID : " + resumeId);
+        super("해당 이력서를 찾을 수 없습니다. Resume ID : " + resumeId);
     }
 }

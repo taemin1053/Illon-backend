@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <script src="https://cdn.portone.io/v2/browser-sdk.js"></script>
+</head>
+<body>
+<h2>백엔드 독고다이 테스트용</h2>
+<button onclick="requestCert()">본인인증 띄우기</button>
+
+<script>
+    async function requestCert() {
+
+        const uniqueId = "verify-" + Date.now();
+
+        const response = await PortOne.requestIdentityVerification({
+            storeId: "store-2b359459-0d4c-42ce-ad4c-0f42ce8d8ab8",
+            channelKey: "channel-key-fc7388b4-4a49-45d3-b282-aec1fa7f222d",
+            identityVerificationId: uniqueId
+        });
+
+        if (response.code != null) {
+            return alert("인증 실패: " + response.message);
+        }
+
+        console.log("🔥🔥🔥 이거 복사해서 포스트맨에 넣으세요: ", response.identityVerificationId);
+        alert("인증 성공! Cmd + Option + J 를 눌러 콘솔창을 확인하세요.");
+    }
+</script>
+</body>
+</html>

@@ -1,5 +1,6 @@
 package com.career.analytics.exception;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -11,11 +12,14 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-    //이메일 중복 예외 처리
+
+    // 1. 이메일 중복 예외 처리
     @ExceptionHandler(DuplicateEmailException.class)
-    public ResponseEntity<ErrorResponse>handleDuplicateEmail(DuplicateEmailException ex){
+    public ResponseEntity<ErrorResponse> handleDuplicateEmail(DuplicateEmailException ex) {
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.CONFLICT.value())
@@ -24,7 +28,8 @@ public class GlobalExceptionHandler {
                 .build();
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
-    //어학 정보 없음
+
+    // 2. 어학 정보 없음
     @ExceptionHandler(LanguageNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleLanguageNotFound(LanguageNotFoundException ex) {
         ErrorResponse error = ErrorResponse.builder()
@@ -33,76 +38,72 @@ public class GlobalExceptionHandler {
                 .error("Language Not Found")
                 .message(ex.getMessage())
                 .build();
-
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
-    //수상 정보 없음
+    // 3. 수상 정보 없음
     @ExceptionHandler(AwardNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleAwardNotFound(AwardNotFoundException ex) {
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.NOT_FOUND.value())
-                .error("Language Not Found")
+                .error("Award Not Found")
                 .message(ex.getMessage())
                 .build();
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
-    //포트폴리오 정보 없음
+    // 4. 포트폴리오 정보 없음
     @ExceptionHandler(PortfolioNotFoundException.class)
     public ResponseEntity<ErrorResponse> handlePortfolioNotFound(PortfolioNotFoundException ex) {
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.NOT_FOUND.value())
                 .error("Portfolio Not Found")
-                .message(ex.getMessage()) // 우리가 만든 "포트폴리오를 찾을수 없습니다 ID : n" 출력
+                .message(ex.getMessage())
                 .build();
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
-    //사용자 없음 예외 처리
+
+    // 5. 사용자 없음 예외 처리
     @ExceptionHandler(UserNotFoundException.class)
-    public ResponseEntity<ErrorResponse>handleUserNotFound(UserNotFoundException ex){
+    public ResponseEntity<ErrorResponse> handleUserNotFound(UserNotFoundException ex) {
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.NOT_FOUND.value())
-                .message("User Not Found")
+                .error("User Not Found")
                 .message(ex.getMessage())
                 .build();
-
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
-    //프로필 예외 처리
+    // 6. 프로필 예외 처리 (✨ 하드코딩 메시지 수정 완료)
     @ExceptionHandler(ProfileNotFoundException.class)
-    public ResponseEntity<ErrorResponse>handleProfileNotFound(ProfileNotFoundException ex){
+    public ResponseEntity<ErrorResponse> handleProfileNotFound(ProfileNotFoundException ex) {
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.NOT_FOUND.value())
                 .error("Profile Not Found")
-                .message("Profile Not Found")
+                .message(ex.getMessage()) // "Profile Not Found" 하드코딩 대신 ex.getMessage() 사용
                 .build();
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
-    //로그인 실패
+    // 7. 로그인 실패
     @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<ErrorResponse>handleBadCredentials(BadCredentialsException ex){
+    public ResponseEntity<ErrorResponse> handleBadCredentials(BadCredentialsException ex) {
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.UNAUTHORIZED.value())
                 .error("Login Failed")
-                .message(ex.getMessage())
                 .message("이메일 또는 비밀번호가 올바르지 않습니다.")
                 .build();
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
     }
 
-    //Validation
+    // 8. 입력값 검증 실패 (Validation)
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ValidationErrorResponse>handleValidationErrors(
-            MethodArgumentNotValidException ex){
-
+    public ResponseEntity<ValidationErrorResponse> handleValidationErrors(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
         ex.getBindingResult().getAllErrors().forEach(error -> {
             String fieldName = ((FieldError) error).getField();
@@ -118,20 +119,20 @@ public class GlobalExceptionHandler {
                 .build();
         return ResponseEntity.badRequest().body(response);
     }
-    //권한 없음
+
+    // 9. 권한 없음 (401 Unauthorized로 일관성 유지)
     @ExceptionHandler(UnauthorizedAccessException.class)
     public ResponseEntity<ErrorResponse> handleUnauthorizedAccess(UnauthorizedAccessException ex) {
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
-                .status(HttpStatus.FORBIDDEN.value())
+                .status(HttpStatus.UNAUTHORIZED.value())
                 .error("Unauthorized Access")
                 .message(ex.getMessage())
                 .build();
-
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
     }
 
-    //학력 정보 없음
+    // 10. 학력 정보 없음
     @ExceptionHandler(EducationNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleEducationNotFound(EducationNotFoundException ex) {
         ErrorResponse error = ErrorResponse.builder()
@@ -140,10 +141,10 @@ public class GlobalExceptionHandler {
                 .error("Education Not Found")
                 .message(ex.getMessage())
                 .build();
-
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
-    //경력 정보없음
+
+    // 11. 경력 정보 없음
     @ExceptionHandler(WorkExperienceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleWorkExperienceNotFound(WorkExperienceNotFoundException ex) {
         ErrorResponse error = ErrorResponse.builder()
@@ -152,46 +153,103 @@ public class GlobalExceptionHandler {
                 .error("Work Experience Not Found")
                 .message(ex.getMessage())
                 .build();
-
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
-
-    //자격증 예외
+    // 12. 자격증 예외
     @ExceptionHandler(CertificationNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleCertificationNotFound(CertificationNotFoundException ex) {
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.NOT_FOUND.value())
-                .error("Certification Not found")
+                .error("Certification Not Found")
                 .message(ex.getMessage())
                 .build();
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
-    //자소서 예외
+
+    // 13. 자기소개서 예외 (✨ 상태 코드 불일치 수정 완료)
     @ExceptionHandler(CoverLetterException.class)
     public ResponseEntity<ErrorResponse> handleCoverLetterException(CoverLetterException ex) {
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
-                .status(HttpStatus.NO_CONTENT.value())
+                .status(HttpStatus.NOT_FOUND.value()) // NO_CONTENT.value() 대신 NOT_FOUND.value()로 수정
                 .error("Cover Letter Not Found")
                 .message(ex.getMessage())
                 .build();
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
-    //기타 예외
+
+    // 14. 소셜 로그인 예외 처리
+    @ExceptionHandler(OAuth2LoginFailedException.class)
+    public ResponseEntity<ErrorResponse> handleOAuth2LoginFailedException(OAuth2LoginFailedException ex) {
+        log.error("OAuth2 로그인 실패: {}", ex.getMessage());
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.UNAUTHORIZED.value())
+                .error("OAuth2 Login Failed")
+                .message(ex.getMessage())
+                .build();
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
+
+    // 15. 기타 예외 (500 Internal Server Error)
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
+        log.error("Unhandled Exception: ", ex);
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
                 .error("Internal Server Error")
                 .message("서버 내부 오류가 발생했습니다.")
                 .build();
-
-        // 실제 에러는 로그로만 남기고 클라이언트에는 숨김
-        ex.printStackTrace();
-
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+    }
+    // 16. 채용 공고 정보 없음 예외 처리
+    @ExceptionHandler(JobNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleJobNotFound(JobNotFoundException ex) {
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.NOT_FOUND.value())
+                .error("Job Not Found")
+                .message(ex.getMessage())
+                .build();
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    // 17. AI 분석 요청 포맷 오류 예외 처리
+    @ExceptionHandler(AiAnalysisRequestException.class)
+    public ResponseEntity<ErrorResponse> handleAiAnalysisRequest(AiAnalysisRequestException ex) {
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Bad Request (AI)")
+                .message(ex.getMessage())
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    // 18. AI 서버 장애 및 통신 오류 예외 처리
+    @ExceptionHandler(AiServerException.class)
+    public ResponseEntity<ErrorResponse> handleAiServer(AiServerException ex) {
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.BAD_GATEWAY.value())
+                .error("Bad Gateway (AI)")
+                .message(ex.getMessage())
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(error);
+    }
+
+    // 19. 파일 유효성 검증 실패 예외 처리
+    @ExceptionHandler(InvalidFileException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidFile(InvalidFileException ex) {
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Invalid File")
+                .message(ex.getMessage())
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 }

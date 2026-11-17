@@ -1,7 +1,5 @@
 package com.career.analytics.entity;
 
-
-
 import jakarta.persistence.*;
 import lombok.*;
 import org.apache.commons.lang3.StringUtils;
@@ -36,7 +34,14 @@ public class WorkExperience {
     private String department;
 
     @Column(length = 100)
-    private String role;
+    private String role; // 직무 (예: ux/ui디자이너)
+
+    // ✨ 1. 기획서에 맞춰 추가된 필드들!
+    @Column(length = 50, name = "employment_type")
+    private String employmentType; // 재직형태 (예: 정규직, 계약직, 인턴)
+
+    @Column(length = 50)
+    private String position; // 직책 (예: 사원, 대리, 팀장)
 
     @Column(nullable = false, name = "start_date")
     private LocalDate startDate;
@@ -58,17 +63,18 @@ public class WorkExperience {
 
     @Column(columnDefinition = "TEXT")
     private String description;
-    //  정적 팩토리 메서드
 
-
-     //경력 정보 생성
+    // ✨ 2. 정적 팩토리 메서드에 파라미터 추가
     public static WorkExperience create(Resume resume, String companyName, String department,
-                                        String role, LocalDate startDate, LocalDate endDate, boolean isCurrent ,String description) {
+                                        String role, String employmentType, String position,
+                                        LocalDate startDate, LocalDate endDate, boolean isCurrent, String description) {
         return WorkExperience.builder()
                 .resume(resume)
                 .companyName(companyName)
                 .department(department)
                 .role(role)
+                .employmentType(employmentType) // 매핑
+                .position(position)             // 매핑
                 .startDate(startDate)
                 .endDate(endDate)
                 .isCurrent(isCurrent)
@@ -76,12 +82,9 @@ public class WorkExperience {
                 .build();
     }
 
-    //  비즈니스 로직 메서드
-
-
-     // 경력 정보 업데이트
-
+    // ✨ 3. 비즈니스 로직(update) 메서드에 파라미터 추가
     public void update(String companyName, String department, String role,
+                       String employmentType, String position,
                        LocalDate startDate, LocalDate endDate, Boolean isCurrent, String description) {
         if (StringUtils.isNotBlank(companyName)) {
             this.companyName = companyName;
@@ -91,6 +94,13 @@ public class WorkExperience {
         }
         if (StringUtils.isNotBlank(role)) {
             this.role = role;
+        }
+        // ✨ 추가된 필드 더티체킹 로직
+        if (StringUtils.isNotBlank(employmentType)) {
+            this.employmentType = employmentType;
+        }
+        if (StringUtils.isNotBlank(position)) {
+            this.position = position;
         }
         if (startDate != null) {
             this.startDate = startDate;
@@ -107,5 +117,9 @@ public class WorkExperience {
         if (StringUtils.isNotBlank(description)) {
             this.description = description;
         }
+    }
+
+    public void setResume(Resume resume) {
+        this.resume = resume;
     }
 }

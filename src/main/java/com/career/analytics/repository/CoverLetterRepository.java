@@ -1,13 +1,15 @@
 package com.career.analytics.repository;
 
 import com.career.analytics.entity.CoverLetter;
-import com.career.analytics.entity.Users;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.Optional; // ✨ List 대신 Optional 임포트!
 
+@Repository
 public interface CoverLetterRepository extends JpaRepository<CoverLetter, Long> {
-    List<CoverLetter> findAllByUserId(Long userId);
-    Optional<CoverLetter> findByIdAndUser(Long id, Users user);
+
+    // ✨ 이력서 1개당 자소서는 1개이므로 Optional로 반환합니다!
+    Optional<CoverLetter> findByResumeId(Long resumeId);
+
 }
